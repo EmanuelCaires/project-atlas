@@ -19,7 +19,7 @@ export default function Navbar({ compact = false }: NavbarProps) {
 
         <div className="nav-links">
           <Link href="/#platform">Platform</Link>
-          <Link href="/developer">Developer Passport</Link>
+          <Link href="/#platform">Developer Passport</Link>
           <Link href="/dashboard">For companies</Link>
         </div>
 

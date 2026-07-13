@@ -1,43 +1,183 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { createClient } from "@/lib/supabase/client";
 
-export const metadata: Metadata = {
-  title: "Developer Passport",
+type Profile = {
+  display_name: string | null;
+  headline: string | null;
+  location: string | null;
 };
 
-const skills = [
-  { name: "JavaScript", level: 92 },
-  { name: "TypeScript", level: 84 },
-  { name: "React", level: 88 },
-  { name: "Next.js", level: 86 },
-  { name: "Python", level: 78 },
-  { name: "Django", level: 80 },
-];
+type Passport = {
+  id: string;
+  bio: string | null;
+  years_experience: number | null;
+  preferred_role: string | null;
+  work_preference: string | null;
+  availability:
+    | "available_now"
+    | "within_2_weeks"
+    | "within_1_month"
+    | "not_available";
+  github_url: string | null;
+  portfolio_url: string | null;
+  linkedin_url: string | null;
+  identity_verified: boolean;
+  github_verified: boolean;
+  profile_strength: number;
+  is_published: boolean;
+};
 
-const projects = [
-  {
-    name: "WeRepair.io",
-    description:
-      "Full-stack e-commerce platform for mobile phones, parts and accessories.",
-    technology: "Django · PostgreSQL · Stripe",
-  },
-  {
-    name: "EC1 Energy",
-    description:
-      "Modern product and waitlist website for an energy drink brand.",
-    technology: "Next.js · Supabase · Vercel",
-  },
-  {
-    name: "Project Atlas",
-    description:
-      "Talent discovery platform built around verified developer evidence.",
-    technology: "Next.js · TypeScript · Supabase",
-  },
-];
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function formatAvailability(value: Passport["availability"]) {
+  const labels = {
+    available_now: "Available now",
+    within_2_weeks: "Available within 2 weeks",
+    within_1_month: "Available within 1 month",
+    not_available: "Not currently available",
+  };
+
+  return labels[value];
+}
 
 export default function DeveloperPage() {
+  const router = useRouter();
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [passport, setPassport] = useState<Passport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function loadDeveloperPassport() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        router.push("/login");
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name, headline, location")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        setErrorMessage(profileError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: passportData, error: passportError } = await supabase
+        .from("developer_passports")
+        .select(
+          `
+          id,
+          bio,
+          years_experience,
+          preferred_role,
+          work_preference,
+          availability,
+          github_url,
+          portfolio_url,
+          linkedin_url,
+          identity_verified,
+          github_verified,
+          profile_strength,
+          is_published
+          `
+        )
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (passportError) {
+        setErrorMessage(passportError.message);
+        setLoading(false);
+        return;
+      }
+
+      setProfile(profileData);
+      setPassport(passportData);
+      setLoading(false);
+    }
+
+    loadDeveloperPassport();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <main>
+        <Navbar compact />
+
+        <section className="container passport-editor-loading">
+          <p>Loading your Developer Passport...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <main>
+        <Navbar compact />
+
+        <section className="container passport-editor-loading">
+          <div>
+            <h1>Unable to load your passport</h1>
+            <p className="passport-editor-error">{errorMessage}</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (!passport) {
+    return (
+      <main>
+        <Navbar compact />
+
+        <section className="container passport-editor-loading">
+          <div>
+            <p className="section-kicker">Developer Passport</p>
+            <h1>You have not created your passport yet.</h1>
+            <p>
+              Add your professional details, availability and portfolio links.
+            </p>
+
+            <Link className="button" href="/developer/edit">
+              Create Developer Passport
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const displayName = profile?.display_name || "Developer";
+  const role =
+    passport.preferred_role ||
+    profile?.headline ||
+    "Software Developer";
+
   return (
     <main>
       <Navbar compact />
@@ -51,10 +191,15 @@ export default function DeveloperPage() {
             </div>
 
             <div className="passport-page-actions">
-              <button className="button button-secondary" type="button">
+              <button
+                className="button button-secondary"
+                onClick={() => navigator.clipboard.writeText(window.location.href)}
+                type="button"
+              >
                 Share profile
               </button>
-              <Link className="button" href="/register">
+
+              <Link className="button" href="/developer/edit">
                 Edit passport
               </Link>
             </div>
@@ -62,38 +207,50 @@ export default function DeveloperPage() {
 
           <div className="passport-dashboard">
             <aside className="developer-sidebar">
-              <div className="large-profile-avatar">EC</div>
-              <h2>Emanuel Caires</h2>
-              <p>Full-Stack Web Developer</p>
-              <span>Bristol, United Kingdom</span>
+              <div className="large-profile-avatar">
+                {getInitials(displayName)}
+              </div>
+
+              <h2>{displayName}</h2>
+              <p>{role}</p>
+              <span>{profile?.location || "Location not added"}</span>
 
               <div className="availability-badge">
                 <span className="status-dot" />
-                Open to opportunities
+                {formatAvailability(passport.availability)}
               </div>
 
               <div className="sidebar-details">
                 <div>
                   <span>Experience</span>
-                  <strong>4+ years</strong>
+                  <strong>
+                    {passport.years_experience ?? 0} years
+                  </strong>
                 </div>
+
                 <div>
                   <span>Preferred role</span>
-                  <strong>Junior Full-Stack</strong>
+                  <strong>{role}</strong>
                 </div>
+
                 <div>
                   <span>Work preference</span>
-                  <strong>Remote / Hybrid</strong>
+                  <strong>
+                    {passport.work_preference || "Not specified"}
+                  </strong>
                 </div>
+
                 <div>
-                  <span>Languages</span>
-                  <strong>English, Portuguese</strong>
+                  <span>Profile status</span>
+                  <strong>
+                    {passport.is_published ? "Published" : "Private"}
+                  </strong>
                 </div>
               </div>
 
-              <button className="button form-button" type="button">
-                Contact developer
-              </button>
+              <Link className="button form-button" href="/developer/edit">
+                Update profile
+              </Link>
             </aside>
 
             <div className="passport-main-column">
@@ -103,27 +260,40 @@ export default function DeveloperPage() {
                     <p className="dashboard-kicker">Atlas profile summary</p>
                     <h2>Developer overview</h2>
                   </div>
-                  <span className="verified-badge">Identity verified</span>
+
+                  {passport.identity_verified ? (
+                    <span className="verified-badge">
+                      Identity verified
+                    </span>
+                  ) : (
+                    <span className="verified-badge">
+                      Verification pending
+                    </span>
+                  )}
                 </div>
 
                 <p className="profile-summary">
-                  Full-stack developer with practical experience building
-                  responsive websites and data-driven applications using
-                  JavaScript, Python, Django, React and Next.js.
+                  {passport.bio || "No professional biography has been added yet."}
                 </p>
 
                 <div className="score-summary-grid">
                   <div>
                     <span>Profile strength</span>
-                    <strong>91%</strong>
+                    <strong>{passport.profile_strength}%</strong>
                   </div>
+
                   <div>
                     <span>GitHub evidence</span>
-                    <strong>Verified</strong>
+                    <strong>
+                      {passport.github_verified ? "Verified" : "Not verified"}
+                    </strong>
                   </div>
+
                   <div>
-                    <span>Projects reviewed</span>
-                    <strong>6</strong>
+                    <span>Visibility</span>
+                    <strong>
+                      {passport.is_published ? "Public" : "Private"}
+                    </strong>
                   </div>
                 </div>
               </section>
@@ -131,24 +301,65 @@ export default function DeveloperPage() {
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>
-                    <p className="dashboard-kicker">Technical evidence</p>
-                    <h2>Verified skills</h2>
+                    <p className="dashboard-kicker">Professional evidence</p>
+                    <h2>Profile links</h2>
                   </div>
                 </div>
 
-                <div className="skill-progress-list">
-                  {skills.map((skill) => (
-                    <div className="skill-progress-item" key={skill.name}>
-                      <div>
-                        <strong>{skill.name}</strong>
-                        <span>{skill.level}%</span>
-                      </div>
-                      <div className="skill-progress-track">
-                        <span style={{ width: `${skill.level}%` }} />
-                      </div>
-                    </div>
-                  ))}
+                <div className="passport-link-list">
+                  {passport.github_url ? (
+                    <a
+                      className="button button-secondary"
+                      href={passport.github_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      View GitHub
+                    </a>
+                  ) : (
+                    <span>GitHub URL not added</span>
+                  )}
+
+                  {passport.portfolio_url ? (
+                    <a
+                      className="button button-secondary"
+                      href={passport.portfolio_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      View portfolio
+                    </a>
+                  ) : (
+                    <span>Portfolio URL not added</span>
+                  )}
+
+                  {passport.linkedin_url ? (
+                    <a
+                      className="button button-secondary"
+                      href={passport.linkedin_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      View LinkedIn
+                    </a>
+                  ) : (
+                    <span>LinkedIn URL not added</span>
+                  )}
                 </div>
+              </section>
+
+              <section className="profile-section">
+                <div className="profile-section-header">
+                  <div>
+                    <p className="dashboard-kicker">Technical evidence</p>
+                    <h2>Skills</h2>
+                  </div>
+                </div>
+
+                <p className="profile-summary">
+                  Skills management will be connected in the next development
+                  stage.
+                </p>
               </section>
 
               <section className="profile-section">
@@ -159,19 +370,10 @@ export default function DeveloperPage() {
                   </div>
                 </div>
 
-                <div className="project-list">
-                  {projects.map((project) => (
-                    <article className="project-card" key={project.name}>
-                      <div className="project-icon">{project.name.charAt(0)}</div>
-                      <div>
-                        <h3>{project.name}</h3>
-                        <p>{project.description}</p>
-                        <span>{project.technology}</span>
-                      </div>
-                      <button type="button">View project →</button>
-                    </article>
-                  ))}
-                </div>
+                <p className="profile-summary">
+                  Project management will be connected in the next development
+                  stage.
+                </p>
               </section>
             </div>
           </div>

@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
+import {
+  Badge,
+  Button,
+  Card,
+  SectionHeader,
+} from "@/components/ui";
 
 type Profile = {
   display_name: string | null;
@@ -191,18 +197,20 @@ export default function DeveloperPage() {
             </div>
 
             <div className="passport-page-actions">
-              <button
-                className="button button-secondary"
-                onClick={() => navigator.clipboard.writeText(window.location.href)}
-                type="button"
-              >
-                Share profile
-              </button>
+  <Button
+    onClick={() =>
+      navigator.clipboard.writeText(window.location.href)
+    }
+    type="button"
+    variant="secondary"
+  >
+    Share profile
+  </Button>
 
-              <Link className="button" href="/developer/edit">
-                Edit passport
-              </Link>
-            </div>
+  <Button href="/developer/edit">
+    Edit passport
+  </Button>
+</div>
           </div>
 
           <div className="passport-dashboard">
@@ -348,19 +356,26 @@ export default function DeveloperPage() {
                 </div>
               </section>
 
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Technical evidence</p>
-                    <h2>Skills</h2>
-                  </div>
-                </div>
+              <Card elevated>
+  <SectionHeader
+    action={
+      <Button
+        href="/developer/skills"
+        size="small"
+        variant="secondary"
+      >
+        Manage skills
+      </Button>
+    }
+    description="Add your technical capabilities, proficiency levels and professional experience."
+    eyebrow="Technical evidence"
+    title="Skills"
+  />
 
-                <p className="profile-summary">
-                  Skills management will be connected in the next development
-                  stage.
-                </p>
-              </section>
+  <div className="passport-link-list">
+    <Badge variant="neutral">No skills added yet</Badge>
+  </div>
+</Card>
 
               <section className="profile-section">
                 <div className="profile-section-header">

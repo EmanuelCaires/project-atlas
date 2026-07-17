@@ -12,29 +12,29 @@ type NavbarProps = {
 export default function Navbar({ compact = false }: NavbarProps) {
   const router = useRouter();
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
 
-    async function checkSession() {
+    async function loadSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      setLoggedIn(Boolean(session));
-      setLoading(false);
+      setIsAuthenticated(Boolean(session));
+      setLoadingAuth(false);
     }
 
-    checkSession();
+    loadSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setLoggedIn(Boolean(session));
-      setLoading(false);
+      setIsAuthenticated(Boolean(session));
+      setLoadingAuth(false);
     });
 
     return () => {
@@ -48,14 +48,15 @@ export default function Navbar({ compact = false }: NavbarProps) {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
 
-    setLoggingOut(false);
-
     if (error) {
+      setLoggingOut(false);
       alert(error.message);
       return;
     }
 
-    setLoggedIn(false);
+    setIsAuthenticated(false);
+    setLoggingOut(false);
+
     router.push("/");
     router.refresh();
   }
@@ -75,7 +76,7 @@ export default function Navbar({ compact = false }: NavbarProps) {
         <div className="nav-links">
           <Link href="/#platform">Platform</Link>
 
-          <Link href={loggedIn ? "/developer" : "/#platform"}>
+          <Link href={isAuthenticated ? "/developer" : "/#platform"}>
             Developer Passport
           </Link>
 
@@ -83,7 +84,7 @@ export default function Navbar({ compact = false }: NavbarProps) {
         </div>
 
         <div className="nav-actions">
-          {!loading && loggedIn ? (
+          {loadingAuth ? null : isAuthenticated ? (
             <>
               <Link className="login-link" href="/developer">
                 My Passport
@@ -98,7 +99,7 @@ export default function Navbar({ compact = false }: NavbarProps) {
                 {loggingOut ? "Logging out..." : "Log out"}
               </button>
             </>
-          ) : !loading ? (
+          ) : (
             <>
               <Link className="login-link" href="/login">
                 Log in
@@ -108,7 +109,7 @@ export default function Navbar({ compact = false }: NavbarProps) {
                 Get started
               </Link>
             </>
-          ) : null}
+          )}
         </div>
       </nav>
     </header>

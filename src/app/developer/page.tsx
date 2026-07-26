@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
@@ -21,10 +20,10 @@ type Passport = {
   preferred_role: string | null;
   work_preference: string | null;
   availability:
-    | "available_now"
-    | "within_2_weeks"
-    | "within_1_month"
-    | "not_available";
+  | "available_now"
+  | "within_2_weeks"
+  | "within_1_month"
+  | "not_available";
   github_url: string | null;
   portfolio_url: string | null;
   linkedin_url: string | null;
@@ -49,6 +48,25 @@ type DeveloperSkill = {
   isVerified: boolean;
 };
 
+type ProjectStatus =
+  | "planning"
+  | "in_progress"
+  | "completed"
+  | "archived";
+
+type DeveloperProject = {
+  id: string;
+  title: string;
+  description: string | null;
+  github_url: string | null;
+  live_url: string | null;
+  image_url: string | null;
+  status: ProjectStatus;
+  is_featured: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -69,8 +87,15 @@ function formatAvailability(value: Passport["availability"]) {
   return labels[value];
 }
 
-function formatSkillLevel(level: SkillLevel) {
-  return level.charAt(0).toUpperCase() + level.slice(1);
+function formatProjectStatus(status: ProjectStatus) {
+  const labels: Record<ProjectStatus, string> = {
+    planning: "Planning",
+    in_progress: "In progress",
+    completed: "Completed",
+    archived: "Archived",
+  };
+
+  return labels[status];
 }
 
 export default function DeveloperPage() {
@@ -79,6 +104,8 @@ export default function DeveloperPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
   const [developerSkills, setDeveloperSkills] = useState<DeveloperSkill[]>([]);
+  const [developerProjects, setDeveloperProjects] =
+    useState<DeveloperProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -140,16 +167,12 @@ export default function DeveloperPage() {
       setPassport(passportData);
 
       if (passportData) {
-        const {
-          data: developerSkillRows,
-          error: developerSkillsError,
-        } = await supabase
-          .from("developer_skills")
-          .select(
-            "skill_id, level, years_experience, is_verified"
-          )
-          .eq("passport_id", passportData.id)
-          .order("years_experience", { ascending: false });
+        const { data: developerSkillRows, error: developerSkillsError } =
+          await supabase
+            .from("developer_skills")
+            .select("skill_id, level, years_experience, is_verified")
+            .eq("passport_id", passportData.id)
+            .order("years_experience", { ascending: false });
 
         if (developerSkillsError) {
           setErrorMessage(developerSkillsError.message);
@@ -201,9 +224,39 @@ export default function DeveloperPage() {
             );
 
           setDeveloperSkills(loadedDeveloperSkills);
+
         }
       }
+      const { data: projectRows, error: projectsError } =
+        await supabase
+          .from("developer_projects")
+          .select(
+            `
+      id,
+      title,
+      description,
+      github_url,
+      live_url,
+      image_url,
+      status,
+      is_featured,
+      started_at,
+      completed_at
+      `
+          )
+          .eq("passport_id", passportData.id)
+          .order("is_featured", { ascending: false })
+          .order("created_at", { ascending: false });
 
+      if (projectsError) {
+        setErrorMessage(projectsError.message);
+        setLoading(false);
+        return;
+      }
+
+      setDeveloperProjects(
+        (projectRows ?? []) as DeveloperProject[]
+      );
       setLoading(false);
     }
 
@@ -312,7 +365,9 @@ export default function DeveloperPage() {
               <div className="sidebar-details">
                 <div>
                   <span>Experience</span>
-                  <strong>{passport.years_experience ?? 0} years</strong>
+                  <strong>
+                    {passport.years_experience ?? 0} years
+                  </strong>
                 </div>
 
                 <div>
@@ -344,9 +399,7 @@ export default function DeveloperPage() {
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>
-                    <p className="dashboard-kicker">
-                      Atlas profile summary
-                    </p>
+                    <p className="dashboard-kicker">Atlas profile summary</p>
                     <h2>Developer overview</h2>
                   </div>
 
@@ -375,9 +428,7 @@ export default function DeveloperPage() {
                   <div>
                     <span>GitHub evidence</span>
                     <strong>
-                      {passport.github_verified
-                        ? "Verified"
-                        : "Not verified"}
+                      {passport.github_verified ? "Verified" : "Not verified"}
                     </strong>
                   </div>
 
@@ -393,9 +444,7 @@ export default function DeveloperPage() {
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>
-                    <p className="dashboard-kicker">
-                      Professional evidence
-                    </p>
+                    <p className="dashboard-kicker">Professional evidence</p>
                     <h2>Profile links</h2>
                   </div>
                 </div>
@@ -445,9 +494,7 @@ export default function DeveloperPage() {
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>
-                    <p className="dashboard-kicker">
-                      Technical evidence
-                    </p>
+                    <p className="dashboard-kicker">Technical evidence</p>
                     <h2>Skills</h2>
                   </div>
 
@@ -473,11 +520,9 @@ export default function DeveloperPage() {
                         key={skill.skillId}
                         style={{
                           padding: "14px",
-                          border:
-                            "1px solid rgba(255, 255, 255, 0.12)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
                           borderRadius: "12px",
-                          background:
-                            "rgba(255, 255, 255, 0.03)",
+                          background: "rgba(255, 255, 255, 0.03)",
                         }}
                       >
                         <div
@@ -513,22 +558,20 @@ export default function DeveloperPage() {
                               fontSize: ".82rem",
                             }}
                           >
-                            {formatSkillLevel(skill.level)}
+                            {skill.level.charAt(0).toUpperCase() +
+                              skill.level.slice(1)}
                           </span>
 
                           <span
                             style={{
                               padding: "5px 9px",
                               borderRadius: "999px",
-                              background:
-                                "rgba(255, 255, 255, 0.07)",
+                              background: "rgba(255, 255, 255, 0.07)",
                               fontSize: ".82rem",
                             }}
                           >
                             {skill.yearsExperience}{" "}
-                            {skill.yearsExperience === 1
-                              ? "year"
-                              : "years"}
+                            {skill.yearsExperience === 1 ? "year" : "years"}
                           </span>
                         </div>
                       </div>
@@ -553,12 +596,109 @@ export default function DeveloperPage() {
                     <p className="dashboard-kicker">Selected work</p>
                     <h2>Projects</h2>
                   </div>
+
+                  <Link
+                    className="button button-secondary"
+                    href="/developer/projects"
+                  >
+                    Manage projects
+                  </Link>
                 </div>
 
-                <p className="profile-summary">
-                  Project management will be connected in the next
-                  development stage.
-                </p>
+                {developerProjects.length > 0 ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "16px",
+                    }}
+                  >
+                    {developerProjects.map((project) => (
+                      <article
+                        key={project.id}
+                        style={{
+                          padding: "18px",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          borderRadius: "14px",
+                          background: "rgba(255, 255, 255, 0.03)",
+                        }}
+                      >
+                        {project.image_url && (
+                          <img
+                            alt={`${project.title} screenshot`}
+                            src={project.image_url}
+                            style={{
+                              width: "100%",
+                              maxHeight: "260px",
+                              objectFit: "cover",
+                              borderRadius: "10px",
+                              marginBottom: "16px",
+                            }}
+                          />
+                        )}
+
+                        <div className="profile-section-header">
+                          <div>
+                            <h3>{project.title}</h3>
+
+                            <p className="dashboard-kicker">
+                              {formatProjectStatus(project.status)}
+                            </p>
+                          </div>
+
+                          {project.is_featured && (
+                            <span className="verified-badge">
+                              Featured
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="profile-summary">
+                          {project.description ||
+                            "No project description added."}
+                        </p>
+
+                        {(project.github_url || project.live_url) && (
+                          <div
+                            className="passport-page-actions"
+                            style={{ marginTop: "16px" }}
+                          >
+                            {project.github_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.github_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                GitHub
+                              </a>
+                            )}
+
+                            {project.live_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.live_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Live demo
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="profile-summary">
+                      No projects have been added yet.
+                    </p>
+
+                    <Link className="button" href="/developer/projects">
+                      Add project
+                    </Link>
+                  </div>
+                )}
               </section>
             </div>
           </div>
@@ -569,3 +709,4 @@ export default function DeveloperPage() {
     </main>
   );
 }
+

@@ -13,6 +13,17 @@ type Profile = {
   location: string | null;
 };
 
+type DeveloperSkill = {
+  id: number;
+  level: "beginner" | "intermediate" | "advanced" | "expert";
+  years_experience: number;
+  is_verified: boolean;
+  skill: {
+    name: string;
+    category: string | null;
+  };
+};
+
 type Passport = {
   id: string;
   bio: string | null;
@@ -20,10 +31,10 @@ type Passport = {
   preferred_role: string | null;
   work_preference: string | null;
   availability:
-  | "available_now"
-  | "within_2_weeks"
-  | "within_1_month"
-  | "not_available";
+    | "available_now"
+    | "within_2_weeks"
+    | "within_1_month"
+    | "not_available";
   github_url: string | null;
   portfolio_url: string | null;
   linkedin_url: string | null;
@@ -31,40 +42,6 @@ type Passport = {
   github_verified: boolean;
   profile_strength: number;
   is_published: boolean;
-};
-
-type SkillLevel =
-  | "beginner"
-  | "intermediate"
-  | "advanced"
-  | "expert";
-
-type DeveloperSkill = {
-  skillId: number;
-  name: string;
-  category: string | null;
-  level: SkillLevel;
-  yearsExperience: number;
-  isVerified: boolean;
-};
-
-type ProjectStatus =
-  | "planning"
-  | "in_progress"
-  | "completed"
-  | "archived";
-
-type DeveloperProject = {
-  id: string;
-  title: string;
-  description: string | null;
-  github_url: string | null;
-  live_url: string | null;
-  image_url: string | null;
-  status: ProjectStatus;
-  is_featured: boolean;
-  started_at: string | null;
-  completed_at: string | null;
 };
 
 function getInitials(name: string) {
@@ -87,25 +64,12 @@ function formatAvailability(value: Passport["availability"]) {
   return labels[value];
 }
 
-function formatProjectStatus(status: ProjectStatus) {
-  const labels: Record<ProjectStatus, string> = {
-    planning: "Planning",
-    in_progress: "In progress",
-    completed: "Completed",
-    archived: "Archived",
-  };
-
-  return labels[status];
-}
-
 export default function DeveloperPage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
   const [developerSkills, setDeveloperSkills] = useState<DeveloperSkill[]>([]);
-  const [developerProjects, setDeveloperProjects] =
-    useState<DeveloperProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -163,100 +127,35 @@ export default function DeveloperPage() {
         return;
       }
 
-      setProfile(profileData);
-      setPassport(passportData);
-
       if (passportData) {
-        const { data: developerSkillRows, error: developerSkillsError } =
-          await supabase
-            .from("developer_skills")
-            .select("skill_id, level, years_experience, is_verified")
-            .eq("passport_id", passportData.id)
-            .order("years_experience", { ascending: false });
+        const { data: skillRows, error: skillsError } = await supabase
+          .from("developer_skills")
+          .select(
+            `
+            id,
+            level,
+            years_experience,
+            is_verified,
+            skill:skills (
+              name,
+              category
+            )
+            `
+          )
+          .eq("passport_id", passportData.id)
+          .order("years_experience", { ascending: false });
 
-        if (developerSkillsError) {
-          setErrorMessage(developerSkillsError.message);
+        if (skillsError) {
+          setErrorMessage(skillsError.message);
           setLoading(false);
           return;
         }
 
-        const skillIds = (developerSkillRows ?? []).map(
-          (row) => row.skill_id
-        );
-
-        if (skillIds.length > 0) {
-          const { data: skillRows, error: skillsError } = await supabase
-            .from("skills")
-            .select("id, name, category")
-            .in("id", skillIds);
-
-          if (skillsError) {
-            setErrorMessage(skillsError.message);
-            setLoading(false);
-            return;
-          }
-
-          const skillMap = new Map(
-            (skillRows ?? []).map((skill) => [skill.id, skill])
-          );
-
-          const loadedDeveloperSkills: DeveloperSkill[] = (
-            developerSkillRows ?? []
-          )
-            .map((row) => {
-              const skill = skillMap.get(row.skill_id);
-
-              if (!skill) {
-                return null;
-              }
-
-              return {
-                skillId: row.skill_id,
-                name: skill.name,
-                category: skill.category,
-                level: row.level as SkillLevel,
-                yearsExperience: Number(row.years_experience ?? 0),
-                isVerified: row.is_verified ?? false,
-              };
-            })
-            .filter(
-              (skill): skill is DeveloperSkill => skill !== null
-            );
-
-          setDeveloperSkills(loadedDeveloperSkills);
-
-        }
-      }
-      const { data: projectRows, error: projectsError } =
-        await supabase
-          .from("developer_projects")
-          .select(
-            `
-      id,
-      title,
-      description,
-      github_url,
-      live_url,
-      image_url,
-      status,
-      is_featured,
-      started_at,
-      completed_at
-      `
-          )
-          .eq("passport_id", passportData.id)
-          .order("is_featured", { ascending: false })
-          .order("created_at", { ascending: false });
-
-      if (projectsError) {
-        setErrorMessage(projectsError.message);
-        setLoading(false);
-        return;
+        setDeveloperSkills((skillRows ?? []) as unknown as DeveloperSkill[]);
       }
 
-      setDeveloperProjects(
-        (projectRows ?? []) as DeveloperProject[]
-      );
+      setProfile(profileData);
+      setPassport(passportData);
       setLoading(false);
     }
 
@@ -333,9 +232,7 @@ export default function DeveloperPage() {
             <div className="passport-page-actions">
               <button
                 className="button button-secondary"
-                onClick={() =>
-                  navigator.clipboard.writeText(window.location.href)
-                }
+                onClick={() => navigator.clipboard.writeText(window.location.href)}
                 type="button"
               >
                 Share profile
@@ -415,8 +312,7 @@ export default function DeveloperPage() {
                 </div>
 
                 <p className="profile-summary">
-                  {passport.bio ||
-                    "No professional biography has been added yet."}
+                  {passport.bio || "No professional biography has been added yet."}
                 </p>
 
                 <div className="score-summary-grid">
@@ -498,91 +394,28 @@ export default function DeveloperPage() {
                     <h2>Skills</h2>
                   </div>
 
-                  <Link
-                    className="button button-secondary"
-                    href="/developer/skills"
-                  >
+                  <Link className="button button-secondary" href="/developer/skills">
                     Manage skills
                   </Link>
                 </div>
 
                 {developerSkills.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "12px",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(190px, 1fr))",
-                    }}
-                  >
-                    {developerSkills.map((skill) => (
-                      <div
-                        key={skill.skillId}
-                        style={{
-                          padding: "14px",
-                          border: "1px solid rgba(255, 255, 255, 0.12)",
-                          borderRadius: "12px",
-                          background: "rgba(255, 255, 255, 0.03)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "10px",
-                          }}
-                        >
-                          <strong>{skill.name}</strong>
-
-                          {skill.isVerified && (
-                            <span className="verified-badge">
-                              Verified
-                            </span>
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "8px",
-                            marginTop: "10px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              padding: "5px 9px",
-                              borderRadius: "999px",
-                              background: "rgba(59, 130, 246, 0.14)",
-                              fontSize: ".82rem",
-                            }}
-                          >
-                            {skill.level.charAt(0).toUpperCase() +
-                              skill.level.slice(1)}
-                          </span>
-
-                          <span
-                            style={{
-                              padding: "5px 9px",
-                              borderRadius: "999px",
-                              background: "rgba(255, 255, 255, 0.07)",
-                              fontSize: ".82rem",
-                            }}
-                          >
-                            {skill.yearsExperience}{" "}
-                            {skill.yearsExperience === 1 ? "year" : "years"}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="candidate-skills">
+                    {developerSkills.map((developerSkill) => (
+                      <span key={developerSkill.id}>
+                        {developerSkill.skill.name} · {developerSkill.level}
+                        {developerSkill.years_experience > 0
+                          ? ` · ${developerSkill.years_experience}y`
+                          : ""}
+                      </span>
                     ))}
                   </div>
                 ) : (
                   <div>
                     <p className="profile-summary">
-                      No technical skills have been added yet.
+                      No skills have been added yet. Add your strongest skills to
+                      strengthen your Developer Passport.
                     </p>
-
                     <Link className="button" href="/developer/skills">
                       Add skills
                     </Link>
@@ -596,109 +429,12 @@ export default function DeveloperPage() {
                     <p className="dashboard-kicker">Selected work</p>
                     <h2>Projects</h2>
                   </div>
-
-                  <Link
-                    className="button button-secondary"
-                    href="/developer/projects"
-                  >
-                    Manage projects
-                  </Link>
                 </div>
 
-                {developerProjects.length > 0 ? (
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "16px",
-                    }}
-                  >
-                    {developerProjects.map((project) => (
-                      <article
-                        key={project.id}
-                        style={{
-                          padding: "18px",
-                          border: "1px solid rgba(255, 255, 255, 0.12)",
-                          borderRadius: "14px",
-                          background: "rgba(255, 255, 255, 0.03)",
-                        }}
-                      >
-                        {project.image_url && (
-                          <img
-                            alt={`${project.title} screenshot`}
-                            src={project.image_url}
-                            style={{
-                              width: "100%",
-                              maxHeight: "260px",
-                              objectFit: "cover",
-                              borderRadius: "10px",
-                              marginBottom: "16px",
-                            }}
-                          />
-                        )}
-
-                        <div className="profile-section-header">
-                          <div>
-                            <h3>{project.title}</h3>
-
-                            <p className="dashboard-kicker">
-                              {formatProjectStatus(project.status)}
-                            </p>
-                          </div>
-
-                          {project.is_featured && (
-                            <span className="verified-badge">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="profile-summary">
-                          {project.description ||
-                            "No project description added."}
-                        </p>
-
-                        {(project.github_url || project.live_url) && (
-                          <div
-                            className="passport-page-actions"
-                            style={{ marginTop: "16px" }}
-                          >
-                            {project.github_url && (
-                              <a
-                                className="button button-secondary"
-                                href={project.github_url}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                GitHub
-                              </a>
-                            )}
-
-                            {project.live_url && (
-                              <a
-                                className="button button-secondary"
-                                href={project.live_url}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                Live demo
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <div>
-                    <p className="profile-summary">
-                      No projects have been added yet.
-                    </p>
-
-                    <Link className="button" href="/developer/projects">
-                      Add project
-                    </Link>
-                  </div>
-                )}
+                <p className="profile-summary">
+                  Project management will be connected in the next development
+                  stage.
+                </p>
               </section>
             </div>
           </div>
@@ -709,4 +445,3 @@ export default function DeveloperPage() {
     </main>
   );
 }
-

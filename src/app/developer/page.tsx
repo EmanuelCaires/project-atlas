@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
+import { PROJECT_STATUS_LABELS } from "@/features/projects/constants";
+import { listProjects } from "@/features/projects/services/projects.service";
+import type { DeveloperProject } from "@/features/projects/types";
 
 type Profile = {
   display_name: string | null;
@@ -70,6 +73,7 @@ export default function DeveloperPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
   const [developerSkills, setDeveloperSkills] = useState<DeveloperSkill[]>([]);
+  const [projects, setProjects] = useState<DeveloperProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -152,6 +156,18 @@ export default function DeveloperPage() {
         }
 
         setDeveloperSkills((skillRows ?? []) as unknown as DeveloperSkill[]);
+
+        try {
+          setProjects(await listProjects(passportData.id));
+        } catch (projectsError) {
+          setErrorMessage(
+            projectsError instanceof Error
+              ? projectsError.message
+              : "Unable to load projects."
+          );
+          setLoading(false);
+          return;
+        }
       }
 
       setProfile(profileData);
@@ -429,12 +445,104 @@ export default function DeveloperPage() {
                     <p className="dashboard-kicker">Selected work</p>
                     <h2>Projects</h2>
                   </div>
+
+                  <Link
+                    className="button button-secondary"
+                    href="/developer/projects"
+                  >
+                    Manage projects
+                  </Link>
                 </div>
 
-                <p className="profile-summary">
-                  Project management will be connected in the next development
-                  stage.
-                </p>
+                {projects.length > 0 ? (
+                  <div style={{ display: "grid", gap: 16 }}>
+                    {projects.map((project) => (
+                      <article
+                        key={project.id}
+                        style={{
+                          padding: 18,
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          borderRadius: 14,
+                          background: "rgba(255, 255, 255, 0.03)",
+                        }}
+                      >
+                        {project.image_url && (
+                          // External URLs remain unoptimised until Atlas adds
+                          // managed image storage.
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            alt={`${project.title} screenshot`}
+                            src={project.image_url}
+                            style={{
+                              width: "100%",
+                              maxHeight: 260,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                              marginBottom: 16,
+                            }}
+                          />
+                        )}
+
+                        <div className="profile-section-header">
+                          <div>
+                            <h3>{project.title}</h3>
+                            <p className="dashboard-kicker">
+                              {PROJECT_STATUS_LABELS[project.status]}
+                            </p>
+                          </div>
+
+                          {project.is_featured && (
+                            <span className="verified-badge">Featured</span>
+                          )}
+                        </div>
+
+                        <p className="profile-summary">
+                          {project.description ||
+                            "No project description added."}
+                        </p>
+
+                        {(project.github_url || project.live_url) && (
+                          <div
+                            className="passport-page-actions"
+                            style={{ marginTop: 16 }}
+                          >
+                            {project.github_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.github_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                GitHub
+                              </a>
+                            )}
+
+                            {project.live_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.live_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Live demo
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="profile-summary">
+                      No projects have been added yet. Add work that demonstrates
+                      your technical ability.
+                    </p>
+                    <Link className="button" href="/developer/projects">
+                      Add projects
+                    </Link>
+                  </div>
+                )}
               </section>
             </div>
           </div>

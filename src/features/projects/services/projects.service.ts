@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type {
   DeveloperProject,
+  DeveloperSkill,
   ProjectFormValues,
 } from "../types";
 
@@ -16,6 +17,8 @@ const PROJECT_COLUMNS = `
   started_at,
   completed_at
 `;
+
+
 
 function toProjectPayload(
   passportId: string,
@@ -82,6 +85,87 @@ export async function listProjects(
   return (data ?? []) as DeveloperProject[];
 }
 
+export async function listDeveloperSkills(
+  passportId: string
+): Promise<DeveloperSkill[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("developer_skills")
+    .select(`
+      skill_id,
+      skills (
+        id,
+        name,
+        category
+      )
+    `)
+    .eq("passport_id", passportId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? [])
+    .map((row) => {
+      const skill = Array.isArray(row.skills)
+        ? row.skills[0]
+        : row.skills;
+
+      return skill;
+    })
+    .filter((skill): skill is DeveloperSkill => Boolean(skill));
+}
+
+export async function listProjectSkillIds(
+  projectId: string
+): Promise<number[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("project_skills")
+    .select("skill_id")
+    .eq("project_id", projectId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((row) => row.skill_id);
+}
+
+export async function replaceProjectSkills(
+  projectId: string,
+  skillIds: number[]
+): Promise<void> {
+  const supabase = createClient();
+
+  const { error: deleteError } = await supabase
+    .from("project_skills")
+    .delete()
+    .eq("project_id", projectId);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  if (skillIds.length === 0) {
+    return;
+  }
+
+  const rows = skillIds.map((skillId) => ({
+    project_id: projectId,
+    skill_id: skillId,
+  }));
+
+  const { error: insertError } = await supabase
+    .from("project_skills")
+    .insert(rows);
+
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+}
 export async function createProject(
   passportId: string,
   form: ProjectFormValues

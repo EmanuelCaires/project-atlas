@@ -17,6 +17,17 @@ export type DeveloperProject = {
   completed_at: string | null;
 };
 
+export type DeveloperSkill = {
+  id: number;
+  name: string;
+  category: string | null;
+};
+
+export type ProjectSkill = {
+  project_id: string;
+  skill_id: number;
+};
+
 export type ProjectFormValues = {
   title: string;
   description: string;
@@ -27,6 +38,8 @@ export type ProjectFormValues = {
   isFeatured: boolean;
   startedAt: string;
   completedAt: string;
+
+  skillIds: number[];
 };
 
 export const EMPTY_PROJECT_FORM: ProjectFormValues = {
@@ -39,4 +52,6 @@ export const EMPTY_PROJECT_FORM: ProjectFormValues = {
   isFeatured: false,
   startedAt: "",
   completedAt: "",
+
+  skillIds: [],
 };

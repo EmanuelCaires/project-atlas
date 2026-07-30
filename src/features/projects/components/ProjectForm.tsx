@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import type {
+  DeveloperSkill,
   ProjectFormValues,
   ProjectStatus,
 } from "../types";
@@ -8,6 +9,8 @@ type ProjectFormProps = {
   form: ProjectFormValues;
   isEditing: boolean;
   saving: boolean;
+  availableSkills: DeveloperSkill[];
+  loadingSkills: boolean;
   onChange: <K extends keyof ProjectFormValues>(
     field: K,
     value: ProjectFormValues[K]
@@ -20,10 +23,22 @@ export default function ProjectForm({
   form,
   isEditing,
   saving,
+  availableSkills,
+  loadingSkills,
   onChange,
   onSubmit,
   onCancel,
 }: ProjectFormProps) {
+  function toggleSkill(skillId: number) {
+    const isSelected = form.skillIds.includes(skillId);
+
+    const nextSkillIds = isSelected
+      ? form.skillIds.filter((id) => id !== skillId)
+      : [...form.skillIds, skillId];
+
+    onChange("skillIds", nextSkillIds);
+  }
+
   return (
     <section className="profile-section">
       <div className="profile-section-header">
@@ -133,6 +148,58 @@ export default function ProjectForm({
               value={form.completedAt}
             />
           </label>
+        </div>
+
+        <div>
+          <div className="profile-section-header">
+            <div>
+              <p className="dashboard-kicker">Evidence</p>
+              <h3>Skills used</h3>
+            </div>
+
+            <span>
+              {form.skillIds.length} selected
+            </span>
+          </div>
+
+          {loadingSkills ? (
+            <p>Loading skills...</p>
+          ) : availableSkills.length === 0 ? (
+            <p>
+              No skills are available. Add skills to your Passport before
+              linking them to a project.
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 10,
+              }}
+            >
+              {availableSkills.map((skill) => {
+                const isSelected = form.skillIds.includes(skill.id);
+
+                return (
+                  <button
+                    key={skill.id}
+                    aria-pressed={isSelected}
+                    className={
+                      isSelected
+                        ? "button"
+                        : "button button-secondary"
+                    }
+                    disabled={saving}
+                    onClick={() => toggleSkill(skill.id)}
+                    type="button"
+                  >
+                    {isSelected ? "✓ " : ""}
+                    {skill.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <label style={{ display: "flex", alignItems: "center", gap: 10 }}>

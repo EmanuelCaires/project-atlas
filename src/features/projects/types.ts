@@ -15,6 +15,7 @@ export type DeveloperProject = {
   is_featured: boolean;
   started_at: string | null;
   completed_at: string | null;
+  skills: DeveloperSkill[];
 };
 
 export type DeveloperSkill = {

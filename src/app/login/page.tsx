@@ -36,7 +36,12 @@ export default function LoginPage() {
 
     const role = data.user.user_metadata?.role;
 
-    router.push(role === "employer" ? "/dashboard" : "/developer");
+    router.replace(
+      role === "employer"
+        ? "/employer/dashboard"
+        : "/dashboard"
+    );
+
     router.refresh();
   }
 
@@ -50,9 +55,9 @@ export default function LoginPage() {
           <h1>Access your Atlas workspace.</h1>
 
           <p>
-            Continue building your Developer Passport or return to your
-            employer talent dashboard.
-          </p>
+  Continue building your professional evidence or return to your
+  employer talent dashboard.
+</p>
 
           <div className="auth-benefits">
             <span>Verified developer discovery</span>
@@ -113,4 +118,4 @@ export default function LoginPage() {
       </section>
     </main>
   );
-}
+  }

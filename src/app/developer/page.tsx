@@ -120,7 +120,7 @@ export default function DeveloperPage() {
           github_verified,
           profile_strength,
           is_published
-          `
+          `,
         )
         .eq("profile_id", user.id)
         .maybeSingle();
@@ -144,7 +144,7 @@ export default function DeveloperPage() {
               name,
               category
             )
-            `
+            `,
           )
           .eq("passport_id", passportData.id)
           .order("years_experience", { ascending: false });
@@ -163,7 +163,7 @@ export default function DeveloperPage() {
           setErrorMessage(
             projectsError instanceof Error
               ? projectsError.message
-              : "Unable to load projects."
+              : "Unable to load projects.",
           );
           setLoading(false);
           return;
@@ -229,9 +229,7 @@ export default function DeveloperPage() {
 
   const displayName = profile?.display_name || "Developer";
   const role =
-    passport.preferred_role ||
-    profile?.headline ||
-    "Software Developer";
+    passport.preferred_role || profile?.headline || "Software Developer";
 
   return (
     <main>
@@ -245,10 +243,16 @@ export default function DeveloperPage() {
               <h1>Professional evidence in one verified profile.</h1>
             </div>
 
+            <Link className="button button-secondary" href="/dashboard">
+              Back to dashboard
+            </Link>
+
             <div className="passport-page-actions">
               <button
                 className="button button-secondary"
-                onClick={() => navigator.clipboard.writeText(window.location.href)}
+                onClick={() =>
+                  navigator.clipboard.writeText(window.location.href)
+                }
                 type="button"
               >
                 Share profile
@@ -278,9 +282,7 @@ export default function DeveloperPage() {
               <div className="sidebar-details">
                 <div>
                   <span>Experience</span>
-                  <strong>
-                    {passport.years_experience ?? 0} years
-                  </strong>
+                  <strong>{passport.years_experience ?? 0} years</strong>
                 </div>
 
                 <div>
@@ -290,9 +292,7 @@ export default function DeveloperPage() {
 
                 <div>
                   <span>Work preference</span>
-                  <strong>
-                    {passport.work_preference || "Not specified"}
-                  </strong>
+                  <strong>{passport.work_preference || "Not specified"}</strong>
                 </div>
 
                 <div>
@@ -317,18 +317,15 @@ export default function DeveloperPage() {
                   </div>
 
                   {passport.identity_verified ? (
-                    <span className="verified-badge">
-                      Identity verified
-                    </span>
+                    <span className="verified-badge">Identity verified</span>
                   ) : (
-                    <span className="verified-badge">
-                      Verification pending
-                    </span>
+                    <span className="verified-badge">Verification pending</span>
                   )}
                 </div>
 
                 <p className="profile-summary">
-                  {passport.bio || "No professional biography has been added yet."}
+                  {passport.bio ||
+                    "No professional biography has been added yet."}
                 </p>
 
                 <div className="score-summary-grid">
@@ -410,7 +407,10 @@ export default function DeveloperPage() {
                     <h2>Skills</h2>
                   </div>
 
-                  <Link className="button button-secondary" href="/developer/skills">
+                  <Link
+                    className="button button-secondary"
+                    href="/developer/skills"
+                  >
                     Manage skills
                   </Link>
                 </div>
@@ -429,8 +429,8 @@ export default function DeveloperPage() {
                 ) : (
                   <div>
                     <p className="profile-summary">
-                      No skills have been added yet. Add your strongest skills to
-                      strengthen your Developer Passport.
+                      No skills have been added yet. Add your strongest skills
+                      to strengthen your Developer Passport.
                     </p>
                     <Link className="button" href="/developer/skills">
                       Add skills
@@ -535,8 +535,8 @@ export default function DeveloperPage() {
                 ) : (
                   <div>
                     <p className="profile-summary">
-                      No projects have been added yet. Add work that demonstrates
-                      your technical ability.
+                      No projects have been added yet. Add work that
+                      demonstrates your technical ability.
                     </p>
                     <Link className="button" href="/developer/projects">
                       Add projects

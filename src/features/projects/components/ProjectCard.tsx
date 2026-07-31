@@ -41,6 +41,7 @@ export default function ProjectCard({
       <div className="profile-section-header">
         <div>
           <h3>{project.title}</h3>
+
           <p className="dashboard-kicker">
             {PROJECT_STATUS_LABELS[project.status]}
           </p>
@@ -55,7 +56,31 @@ export default function ProjectCard({
         {project.description || "No project description added."}
       </p>
 
-      <div className="passport-page-actions" style={{ marginTop: 16 }}>
+      {project.skills.length > 0 && (
+        <div
+          aria-label="Skills used in this project"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          {project.skills.map((skill) => (
+            <span
+              className="verified-badge"
+              key={skill.id}
+            >
+              {skill.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div
+        className="passport-page-actions"
+        style={{ marginTop: 16 }}
+      >
         {project.github_url && (
           <a
             className="button button-secondary"

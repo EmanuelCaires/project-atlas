@@ -1,174 +1,494 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import Navbar from "@/components/Navbar";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Employer Dashboard",
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
+import { createClient } from "@/lib/supabase/client";
+
+type Profile = {
+  display_name: string | null;
+  headline: string | null;
 };
 
-const developers = [
-  {
-    initials: "EC",
-    name: "Emanuel Caires",
-    role: "Full-Stack Developer",
-    location: "Bristol, UK",
-    skills: ["Next.js", "React", "Django"],
-    match: 94,
-    availability: "Available",
-  },
-  {
-    initials: "SM",
-    name: "Sofia Martins",
-    role: "Frontend Developer",
-    location: "London, UK",
-    skills: ["React", "TypeScript", "Figma"],
-    match: 91,
-    availability: "2 weeks",
-  },
-  {
-    initials: "JL",
-    name: "James Lewis",
-    role: "Backend Developer",
-    location: "Manchester, UK",
-    skills: ["Node.js", "PostgreSQL", "AWS"],
-    match: 87,
-    availability: "Available",
-  },
-  {
-    initials: "AK",
-    name: "Amara Khan",
-    role: "Software Engineer",
-    location: "Remote, UK",
-    skills: ["Python", "FastAPI", "React"],
-    match: 85,
-    availability: "1 month",
-  },
-];
+type Passport = {
+  id: string;
+  profile_strength: number;
+  is_published: boolean;
+  github_url: string | null;
+  portfolio_url: string | null;
+  linkedin_url: string | null;
+};
 
-export default function DashboardPage() {
+type DashboardProject = {
+  id: string;
+  title: string;
+  status: "planning" | "in_progress" | "completed" | "archived";
+  is_featured: boolean;
+  created_at: string;
+};
+
+type DashboardStats = {
+  totalProjects: number;
+  totalSkills: number;
+  featuredProjects: number;
+  completedProjects: number;
+};
+
+const EMPTY_STATS: DashboardStats = {
+  totalProjects: 0,
+  totalSkills: 0,
+  featuredProjects: 0,
+  completedProjects: 0,
+};
+
+function formatProjectStatus(status: DashboardProject["status"]) {
+  const labels: Record<DashboardProject["status"], string> = {
+    planning: "Planning",
+    in_progress: "In progress",
+    completed: "Completed",
+    archived: "Archived",
+  };
+
+  return labels[status];
+}
+
+export default function DeveloperDashboardPage() {
+  const router = useRouter();
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [passport, setPassport] = useState<Passport | null>(null);
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
+  const [latestProjects, setLatestProjects] = useState<DashboardProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function loadDashboard() {
+      const supabase = createClient();
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw new Error(userError.message);
+        }
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("display_name, headline")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) {
+          throw new Error(profileError.message);
+        }
+
+        const { data: passportData, error: passportError } = await supabase
+          .from("developer_passports")
+          .select(
+            `
+            id,
+            profile_strength,
+            is_published,
+            github_url,
+            portfolio_url,
+            linkedin_url
+            `
+          )
+          .eq("profile_id", user.id)
+          .maybeSingle();
+
+        if (passportError) {
+          throw new Error(passportError.message);
+        }
+
+        if (!passportData) {
+          router.push("/developer/edit");
+          return;
+        }
+
+        const [
+          projectsResult,
+          skillsResult,
+          featuredResult,
+          completedResult,
+          latestProjectsResult,
+        ] = await Promise.all([
+          supabase
+            .from("developer_projects")
+            .select("*", { count: "exact", head: true })
+            .eq("passport_id", passportData.id),
+
+          supabase
+            .from("developer_skills")
+            .select("*", { count: "exact", head: true })
+            .eq("passport_id", passportData.id),
+
+          supabase
+            .from("developer_projects")
+            .select("*", { count: "exact", head: true })
+            .eq("passport_id", passportData.id)
+            .eq("is_featured", true),
+
+          supabase
+            .from("developer_projects")
+            .select("*", { count: "exact", head: true })
+            .eq("passport_id", passportData.id)
+            .eq("status", "completed"),
+
+          supabase
+            .from("developer_projects")
+            .select("id, title, status, is_featured, created_at")
+            .eq("passport_id", passportData.id)
+            .order("created_at", { ascending: false })
+            .limit(3),
+        ]);
+
+        const queryError =
+          projectsResult.error ||
+          skillsResult.error ||
+          featuredResult.error ||
+          completedResult.error ||
+          latestProjectsResult.error;
+
+        if (queryError) {
+          throw new Error(queryError.message);
+        }
+
+        setProfile(profileData);
+        setPassport(passportData);
+        setStats({
+          totalProjects: projectsResult.count ?? 0,
+          totalSkills: skillsResult.count ?? 0,
+          featuredProjects: featuredResult.count ?? 0,
+          completedProjects: completedResult.count ?? 0,
+        });
+        setLatestProjects(
+          (latestProjectsResult.data ?? []) as DashboardProject[]
+        );
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to load your dashboard."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadDashboard();
+  }, [router]);
+
+  const nextActions = useMemo(() => {
+    if (!passport) {
+      return [];
+    }
+
+    const actions: string[] = [];
+
+    if (stats.totalProjects === 0) {
+      actions.push("Add your first project");
+    }
+
+    if (stats.totalSkills === 0) {
+      actions.push("Add your professional skills");
+    }
+
+    if (!passport.github_url) {
+      actions.push("Connect your GitHub profile");
+    }
+
+    if (!passport.portfolio_url) {
+      actions.push("Add your portfolio URL");
+    }
+
+    if (!passport.linkedin_url) {
+      actions.push("Add your LinkedIn profile");
+    }
+
+    if (!passport.is_published) {
+      actions.push("Publish your Developer Passport");
+    }
+
+    return actions.slice(0, 3);
+  }, [passport, stats]);
+
+  if (loading) {
+    return (
+      <main>
+        <Navbar compact />
+
+        <section className="container passport-editor-loading">
+          <p>Loading your dashboard...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (errorMessage || !passport) {
+    return (
+      <main>
+        <Navbar compact />
+
+        <section className="container passport-editor-loading">
+          <div>
+            <p className="section-kicker">Atlas Dashboard</p>
+            <h1>Unable to load your dashboard</h1>
+            <p className="passport-editor-error">
+              {errorMessage || "Developer Passport not found."}
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  const displayName = profile?.display_name || "Developer";
+
   return (
     <main className="dashboard-page">
       <Navbar compact />
 
-      <div className="dashboard-layout container">
-        <aside className="dashboard-sidebar">
-          <div className="company-profile">
-            <div className="company-logo">AC</div>
+      <section className="passport-page">
+        <div className="container">
+          <div className="passport-page-header">
             <div>
-              <strong>Atlas Company</strong>
-              <span>Employer workspace</span>
-            </div>
-          </div>
-
-          <nav className="dashboard-menu">
-            <Link className="active" href="/dashboard">
-              Talent discovery
-            </Link>
-            <Link href="#">AI matches</Link>
-            <Link href="#">Saved developers</Link>
-            <Link href="#">Messages</Link>
-            <Link href="#">Hiring projects</Link>
-          </nav>
-        </aside>
-
-        <section className="dashboard-content">
-          <div className="dashboard-header">
-            <div>
-              <p className="dashboard-kicker">Talent discovery</p>
-              <h1>Find your next developer.</h1>
+              <p className="section-kicker">Evidence Dashboard</p>
+              <h1>Welcome back, {displayName}.</h1>
               <p>
-                Search verified Developer Passports using skills, experience
-                and availability.
+                Track the evidence behind your professional identity and see
+                what to strengthen next.
               </p>
             </div>
 
-            <button className="button" type="button">
-              Create hiring project
-            </button>
+            <div className="passport-page-actions">
+              <Link className="button button-secondary" href="/developer">
+                View passport
+              </Link>
+
+              <Link className="button" href="/developer/projects">
+                Add project
+              </Link>
+            </div>
           </div>
 
           <div className="dashboard-stat-grid">
             <article>
-              <span>Available developers</span>
-              <strong>1,284</strong>
-              <small>+86 this month</small>
+              <span>Projects</span>
+              <strong>{stats.totalProjects}</strong>
+              <small>Professional work added</small>
             </article>
+
             <article>
-              <span>Recommended matches</span>
-              <strong>24</strong>
-              <small>Based on your searches</small>
+              <span>Skills</span>
+              <strong>{stats.totalSkills}</strong>
+              <small>Capabilities documented</small>
             </article>
+
             <article>
-              <span>Saved candidates</span>
-              <strong>12</strong>
-              <small>Across 3 hiring projects</small>
+              <span>Featured projects</span>
+              <strong>{stats.featuredProjects}</strong>
+              <small>Highlighted on your Passport</small>
+            </article>
+
+            <article>
+              <span>Completed projects</span>
+              <strong>{stats.completedProjects}</strong>
+              <small>Delivered project evidence</small>
             </article>
           </div>
 
-          <div className="search-panel">
-            <div className="search-field">
-              <input
-                placeholder="Search by skill, role or technology..."
-                type="search"
-              />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: 24,
+              marginTop: 28,
+            }}
+          >
+            <section className="profile-section">
+              <div className="profile-section-header">
+                <div>
+                  <p className="dashboard-kicker">Passport progress</p>
+                  <h2>{passport.profile_strength}% complete</h2>
+                </div>
+
+                <span className="verified-badge">
+                  {passport.is_published ? "Published" : "Private"}
+                </span>
+              </div>
+
+              <div
+                aria-label={`Passport completion: ${passport.profile_strength}%`}
+                style={{
+                  width: "100%",
+                  height: 12,
+                  overflow: "hidden",
+                  borderRadius: 999,
+                  background: "rgba(255, 255, 255, 0.1)",
+                  marginTop: 18,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${Math.min(
+                      Math.max(passport.profile_strength, 0),
+                      100
+                    )}%`,
+                    height: "100%",
+                    borderRadius: 999,
+                    background:
+                      "linear-gradient(90deg, #8b5cf6, #4f46e5)",
+                    transition: "width 300ms ease",
+                  }}
+                />
+              </div>
+
+              {nextActions.length > 0 ? (
+                <div style={{ marginTop: 22 }}>
+                  <p className="dashboard-kicker">Recommended next steps</p>
+
+                  <ul
+                    style={{
+                      display: "grid",
+                      gap: 10,
+                      marginTop: 12,
+                      paddingLeft: 20,
+                    }}
+                  >
+                    {nextActions.map((action) => (
+                      <li key={action}>{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="profile-summary" style={{ marginTop: 20 }}>
+                  Your Passport foundation is complete. Continue adding strong,
+                  relevant evidence.
+                </p>
+              )}
+
+              <div
+                className="passport-page-actions"
+                style={{ marginTop: 20 }}
+              >
+                <Link
+                  className="button button-secondary"
+                  href="/developer/edit"
+                >
+                  Edit passport
+                </Link>
+              </div>
+            </section>
+
+            <section className="profile-section">
+              <div className="profile-section-header">
+                <div>
+                  <p className="dashboard-kicker">Quick actions</p>
+                  <h2>Continue building your evidence</h2>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 12,
+                  marginTop: 18,
+                }}
+              >
+                <Link className="button" href="/developer/projects">
+                  Add or manage projects
+                </Link>
+
+                <Link
+                  className="button button-secondary"
+                  href="/developer/skills"
+                >
+                  Add or manage skills
+                </Link>
+
+                <Link
+                  className="button button-secondary"
+                  href="/developer/edit"
+                >
+                  Update professional details
+                </Link>
+              </div>
+            </section>
+          </div>
+
+          <section className="profile-section" style={{ marginTop: 24 }}>
+            <div className="profile-section-header">
+              <div>
+                <p className="dashboard-kicker">Recent evidence</p>
+                <h2>Latest projects</h2>
+              </div>
+
+              <Link href="/developer/projects">View all projects →</Link>
             </div>
 
-            <select defaultValue="">
-              <option disabled value="">Experience</option>
-              <option>Junior</option>
-              <option>Mid-level</option>
-              <option>Senior</option>
-            </select>
+            {latestProjects.length > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(230px, 1fr))",
+                  gap: 16,
+                  marginTop: 20,
+                }}
+              >
+                {latestProjects.map((project) => (
+                  <article
+                    key={project.id}
+                    style={{
+                      padding: 18,
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      borderRadius: 14,
+                      background: "rgba(255, 255, 255, 0.03)",
+                    }}
+                  >
+                    <div className="profile-section-header">
+                      <div>
+                        <h3>{project.title}</h3>
+                        <p className="dashboard-kicker">
+                          {formatProjectStatus(project.status)}
+                        </p>
+                      </div>
 
-            <select defaultValue="">
-              <option disabled value="">Availability</option>
-              <option>Available now</option>
-              <option>Within 2 weeks</option>
-              <option>Within 1 month</option>
-            </select>
+                      {project.is_featured && (
+                        <span className="verified-badge">Featured</span>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div style={{ marginTop: 20 }}>
+                <p className="profile-summary">
+                  You have not added any project evidence yet.
+                </p>
 
-            <button className="button" type="button">
-              Search
-            </button>
-          </div>
+                <Link className="button" href="/developer/projects">
+                  Add your first project
+                </Link>
+              </div>
+            )}
+          </section>
+        </div>
+      </section>
 
-          <div className="candidate-section-header">
-            <div>
-              <h2>Recommended developers</h2>
-              <p>Profiles matched to your recent activity.</p>
-            </div>
-          </div>
-
-          <div className="candidate-grid">
-            {developers.map((developer) => (
-              <article className="candidate-card" key={developer.name}>
-                <div className="candidate-card-top">
-                  <div className="candidate-avatar">{developer.initials}</div>
-                  <div className="candidate-match">
-                    <strong>{developer.match}%</strong>
-                    <span>match</span>
-                  </div>
-                </div>
-
-                <h3>{developer.name}</h3>
-                <p>{developer.role}</p>
-                <span className="candidate-location">{developer.location}</span>
-
-                <div className="candidate-skills">
-                  {developer.skills.map((skill) => (
-                    <span key={skill}>{skill}</span>
-                  ))}
-                </div>
-
-                <div className="candidate-card-footer">
-                  <span>{developer.availability}</span>
-                  <Link href="/developer">View passport →</Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      </div>
+      <Footer />
     </main>
   );
 }

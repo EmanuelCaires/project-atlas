@@ -15,9 +15,15 @@ const PROJECT_COLUMNS = `
   status,
   is_featured,
   started_at,
-  completed_at
+  completed_at,
+  project_skills (
+    skills (
+      id,
+      name,
+      category
+    )
+  )
 `;
-
 
 
 function toProjectPayload(
@@ -36,6 +42,57 @@ function toProjectPayload(
     started_at: form.startedAt || null,
     completed_at: form.completedAt || null,
     updated_at: new Date().toISOString(),
+  };
+}
+
+function mapProjectWithSkills(project: {
+  id: string;
+  title: string;
+  description: string | null;
+  github_url: string | null;
+  live_url: string | null;
+  image_url: string | null;
+  status: DeveloperProject["status"];
+  is_featured: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+  project_skills?: Array<{
+    skills:
+      | {
+          id: number;
+          name: string;
+          category: string | null;
+        }
+      | Array<{
+          id: number;
+          name: string;
+          category: string | null;
+        }>
+      | null;
+  }>;
+}): DeveloperProject {
+  const skills = (project.project_skills ?? [])
+    .flatMap((row) => {
+      if (!row.skills) return [];
+      return Array.isArray(row.skills) ? row.skills : [row.skills];
+    })
+    .filter(
+      (skill): skill is DeveloperSkill =>
+        Boolean(skill)
+    );
+
+  return {
+    id: project.id,
+    title: project.title,
+    description: project.description,
+    github_url: project.github_url,
+    live_url: project.live_url,
+    image_url: project.image_url,
+    status: project.status,
+    is_featured: project.is_featured,
+    started_at: project.started_at,
+    completed_at: project.completed_at,
+    skills,
   };
 }
 
@@ -71,6 +128,7 @@ export async function listProjects(
   passportId: string
 ): Promise<DeveloperProject[]> {
   const supabase = createClient();
+
   const { data, error } = await supabase
     .from("developer_projects")
     .select(PROJECT_COLUMNS)
@@ -82,7 +140,7 @@ export async function listProjects(
     throw new Error(error.message);
   }
 
-  return (data ?? []) as DeveloperProject[];
+  return (data ?? []).map(mapProjectWithSkills);
 }
 
 export async function listDeveloperSkills(
@@ -181,7 +239,7 @@ export async function createProject(
     throw new Error(error.message);
   }
 
-  return data as DeveloperProject;
+  return mapProjectWithSkills(data);
 }
 
 export async function updateProject(

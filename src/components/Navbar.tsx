@@ -86,6 +86,10 @@ export default function Navbar({ compact = false }: NavbarProps) {
         <div className="nav-actions">
           {loadingAuth ? null : isAuthenticated ? (
             <>
+              <Link className="login-link" href="/dashboard">
+                Dashboard
+              </Link>
+              
               <Link className="login-link" href="/developer">
                 My Passport
               </Link>

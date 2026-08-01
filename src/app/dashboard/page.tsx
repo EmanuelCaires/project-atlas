@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { StatCard } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
@@ -103,7 +104,7 @@ export default function DeveloperDashboardPage() {
             github_url,
             portfolio_url,
             linkedin_url
-            `
+            `,
           )
           .eq("profile_id", user.id)
           .maybeSingle();
@@ -174,13 +175,13 @@ export default function DeveloperDashboardPage() {
           completedProjects: completedResult.count ?? 0,
         });
         setLatestProjects(
-          (latestProjectsResult.data ?? []) as DashboardProject[]
+          (latestProjectsResult.data ?? []) as DashboardProject[],
         );
       } catch (error) {
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : "Unable to load your dashboard."
+            : "Unable to load your dashboard.",
         );
       } finally {
         setLoading(false);
@@ -284,29 +285,29 @@ export default function DeveloperDashboardPage() {
           </div>
 
           <div className="dashboard-stat-grid">
-            <article>
-              <span>Projects</span>
-              <strong>{stats.totalProjects}</strong>
-              <small>Professional work added</small>
-            </article>
+            <StatCard
+              title="Projects"
+              value={stats.totalProjects}
+              subtitle="Professional work added"
+            />
 
-            <article>
-              <span>Skills</span>
-              <strong>{stats.totalSkills}</strong>
-              <small>Capabilities documented</small>
-            </article>
+            <StatCard
+              title="Skills"
+              value={stats.totalSkills}
+              subtitle="Capabilities documented"
+            />
 
-            <article>
-              <span>Featured projects</span>
-              <strong>{stats.featuredProjects}</strong>
-              <small>Highlighted on your Passport</small>
-            </article>
+            <StatCard
+              title="Featured projects"
+              value={stats.featuredProjects}
+              subtitle="Highlighted on your Passport"
+            />
 
-            <article>
-              <span>Completed projects</span>
-              <strong>{stats.completedProjects}</strong>
-              <small>Delivered project evidence</small>
-            </article>
+            <StatCard
+              title="Completed projects"
+              value={stats.completedProjects}
+              subtitle="Delivered project evidence"
+            />
           </div>
 
           <div
@@ -344,12 +345,11 @@ export default function DeveloperDashboardPage() {
                   style={{
                     width: `${Math.min(
                       Math.max(passport.profile_strength, 0),
-                      100
+                      100,
                     )}%`,
                     height: "100%",
                     borderRadius: 999,
-                    background:
-                      "linear-gradient(90deg, #8b5cf6, #4f46e5)",
+                    background: "linear-gradient(90deg, #8b5cf6, #4f46e5)",
                     transition: "width 300ms ease",
                   }}
                 />
@@ -379,10 +379,7 @@ export default function DeveloperDashboardPage() {
                 </p>
               )}
 
-              <div
-                className="passport-page-actions"
-                style={{ marginTop: 20 }}
-              >
+              <div className="passport-page-actions" style={{ marginTop: 20 }}>
                 <Link
                   className="button button-secondary"
                   href="/developer/edit"
@@ -442,8 +439,7 @@ export default function DeveloperDashboardPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(230px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
                   gap: 16,
                   marginTop: 20,
                 }}

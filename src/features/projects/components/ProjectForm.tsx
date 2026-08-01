@@ -1,3 +1,4 @@
+import { SkillBadge } from "@/components/ui";
 import type { FormEvent } from "react";
 import type {
   DeveloperSkill,
@@ -13,7 +14,7 @@ type ProjectFormProps = {
   loadingSkills: boolean;
   onChange: <K extends keyof ProjectFormValues>(
     field: K,
-    value: ProjectFormValues[K]
+    value: ProjectFormValues[K],
   ) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
@@ -65,9 +66,7 @@ export default function ProjectForm({
           Description
           <textarea
             maxLength={3000}
-            onChange={(event) =>
-              onChange("description", event.target.value)
-            }
+            onChange={(event) => onChange("description", event.target.value)}
             placeholder="Explain the project, your contribution and the problem it solves."
             rows={5}
             value={form.description}
@@ -78,9 +77,7 @@ export default function ProjectForm({
           <label>
             GitHub URL
             <input
-              onChange={(event) =>
-                onChange("githubUrl", event.target.value)
-              }
+              onChange={(event) => onChange("githubUrl", event.target.value)}
               placeholder="https://github.com/..."
               type="url"
               value={form.githubUrl}
@@ -90,9 +87,7 @@ export default function ProjectForm({
           <label>
             Live project URL
             <input
-              onChange={(event) =>
-                onChange("liveUrl", event.target.value)
-              }
+              onChange={(event) => onChange("liveUrl", event.target.value)}
               placeholder="https://..."
               type="url"
               value={form.liveUrl}
@@ -129,9 +124,7 @@ export default function ProjectForm({
           <label>
             Started date
             <input
-              onChange={(event) =>
-                onChange("startedAt", event.target.value)
-              }
+              onChange={(event) => onChange("startedAt", event.target.value)}
               type="date"
               value={form.startedAt}
             />
@@ -141,9 +134,7 @@ export default function ProjectForm({
             Completed date
             <input
               min={form.startedAt || undefined}
-              onChange={(event) =>
-                onChange("completedAt", event.target.value)
-              }
+              onChange={(event) => onChange("completedAt", event.target.value)}
               type="date"
               value={form.completedAt}
             />
@@ -157,9 +148,7 @@ export default function ProjectForm({
               <h3>Skills used</h3>
             </div>
 
-            <span>
-              {form.skillIds.length} selected
-            </span>
+            <span>{form.skillIds.length} selected</span>
           </div>
 
           {loadingSkills ? (
@@ -171,6 +160,7 @@ export default function ProjectForm({
             </p>
           ) : (
             <div
+              className="skill-badge-list"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
@@ -181,21 +171,13 @@ export default function ProjectForm({
                 const isSelected = form.skillIds.includes(skill.id);
 
                 return (
-                  <button
+                  <SkillBadge
                     key={skill.id}
-                    aria-pressed={isSelected}
-                    className={
-                      isSelected
-                        ? "button"
-                        : "button button-secondary"
-                    }
                     disabled={saving}
+                    name={skill.name}
                     onClick={() => toggleSkill(skill.id)}
-                    type="button"
-                  >
-                    {isSelected ? "✓ " : ""}
-                    {skill.name}
-                  </button>
+                    selected={isSelected}
+                  />
                 );
               })}
             </div>
@@ -205,9 +187,7 @@ export default function ProjectForm({
         <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <input
             checked={form.isFeatured}
-            onChange={(event) =>
-              onChange("isFeatured", event.target.checked)
-            }
+            onChange={(event) => onChange("isFeatured", event.target.checked)}
             type="checkbox"
           />
           Feature this project on my passport

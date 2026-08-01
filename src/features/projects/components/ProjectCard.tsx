@@ -1,3 +1,5 @@
+import { SkillBadge } from "@/components/ui";
+import { calculateProjectEvidence } from "@/features/evidence/services/evidence.service";
 import { PROJECT_STATUS_LABELS } from "../constants";
 import type { DeveloperProject } from "../types";
 
@@ -7,34 +9,40 @@ type ProjectCardProps = {
   onDelete: (projectId: string) => void;
 };
 
+function getEvidenceLabel(score: number) {
+  if (score >= 85) return "Excellent evidence";
+  if (score >= 65) return "Strong evidence";
+  if (score >= 40) return "Developing evidence";
+  return "Limited evidence";
+}
+
 export default function ProjectCard({
   project,
   onEdit,
   onDelete,
 }: ProjectCardProps) {
+  const evidence = calculateProjectEvidence({
+    description: project.description,
+    githubUrl: project.github_url,
+    liveUrl: project.live_url,
+    imageUrl: project.image_url,
+    isFeatured: project.is_featured,
+    status: project.status,
+    skillsCount: project.skills.length,
+  });
+
+  const evidenceLabel = getEvidenceLabel(evidence.score);
+
   return (
-    <article
-      style={{
-        padding: 18,
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        borderRadius: 14,
-        background: "rgba(255, 255, 255, 0.03)",
-      }}
-    >
+    <article className="developer-project-card">
       {project.image_url && (
         // External user-provided URLs are intentionally rendered without
         // Next Image optimisation until Atlas adds managed image storage.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           alt={`${project.title} screenshot`}
+          className="developer-project-card-image"
           src={project.image_url}
-          style={{
-            width: "100%",
-            maxHeight: 260,
-            objectFit: "cover",
-            borderRadius: 10,
-            marginBottom: 16,
-          }}
         />
       )}
 
@@ -52,6 +60,25 @@ export default function ProjectCard({
         )}
       </div>
 
+      <div className="project-evidence-summary">
+        <div className="project-evidence-score">
+          <span>Evidence score</span>
+          <strong>{evidence.score}/100</strong>
+        </div>
+
+        <span className="project-evidence-label">{evidenceLabel}</span>
+      </div>
+
+      <div
+        aria-label={`Evidence score: ${evidence.score} out of 100`}
+        className="project-evidence-progress"
+      >
+        <div
+          className="project-evidence-progress-value"
+          style={{ width: `${evidence.score}%` }}
+        />
+      </div>
+
       <p className="profile-summary">
         {project.description || "No project description added."}
       </p>
@@ -59,28 +86,15 @@ export default function ProjectCard({
       {project.skills.length > 0 && (
         <div
           aria-label="Skills used in this project"
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            marginTop: 16,
-          }}
+          className="skill-badge-list"
         >
           {project.skills.map((skill) => (
-            <span
-              className="verified-badge"
-              key={skill.id}
-            >
-              {skill.name}
-            </span>
+            <SkillBadge key={skill.id} name={skill.name} />
           ))}
         </div>
       )}
 
-      <div
-        className="passport-page-actions"
-        style={{ marginTop: 16 }}
-      >
+      <div className="passport-page-actions developer-project-card-actions">
         {project.github_url && (
           <a
             className="button button-secondary"

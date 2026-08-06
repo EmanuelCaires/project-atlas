@@ -1,5 +1,7 @@
 "use client";
 
+import { getNextRecommendation } from "@/features/recommendations/services/recommendation.service";
+import TodayMission from "@/components/missions/TodayMission";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,6 +29,9 @@ type DashboardProject = {
   title: string;
   status: "planning" | "in_progress" | "completed" | "archived";
   is_featured: boolean;
+  github_url: string | null;
+  live_url: string | null;
+  image_url: string | null;
   created_at: string;
 };
 
@@ -149,10 +154,11 @@ export default function DeveloperDashboardPage() {
 
           supabase
             .from("developer_projects")
-            .select("id, title, status, is_featured, created_at")
+            .select(
+              "id, title, status, is_featured, github_url, live_url, image_url, created_at",
+            )
             .eq("passport_id", passportData.id)
-            .order("created_at", { ascending: false })
-            .limit(3),
+            .order("created_at", { ascending: false }),
         ]);
 
         const queryError =
@@ -257,6 +263,27 @@ export default function DeveloperDashboardPage() {
 
   const displayName = profile?.display_name || "Developer";
 
+  const recommendation = getNextRecommendation({
+    totalProjects: latestProjects.length,
+
+    completedProjects: latestProjects.filter(
+      (project) => project.status === "completed",
+    ).length,
+
+    featuredProjects: latestProjects.filter((project) => project.is_featured)
+      .length,
+
+    githubProjects: latestProjects.filter((project) =>
+      Boolean(project.github_url),
+    ).length,
+
+    liveProjects: latestProjects.filter((project) => Boolean(project.live_url))
+      .length,
+
+    screenshotProjects: latestProjects.filter((project) =>
+      Boolean(project.image_url),
+    ).length,
+  });
   return (
     <main className="dashboard-page">
       <Navbar compact />
@@ -272,6 +299,13 @@ export default function DeveloperDashboardPage() {
                 what to strengthen next.
               </p>
             </div>
+
+            <TodayMission
+              title={recommendation.title}
+              description={recommendation.description}
+              impact={recommendation.impact}
+              estimatedMinutes={recommendation.estimatedMinutes}
+            />
 
             <div className="passport-page-actions">
               <Link className="button button-secondary" href="/developer">
@@ -444,7 +478,7 @@ export default function DeveloperDashboardPage() {
                   marginTop: 20,
                 }}
               >
-                {latestProjects.map((project) => (
+                {latestProjects.slice(0, 3).map((project) => (
                   <article
                     key={project.id}
                     style={{

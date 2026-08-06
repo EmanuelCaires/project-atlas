@@ -1,22 +1,30 @@
 "use client";
 
-import { getNextRecommendation } from "@/features/recommendations/services/recommendation.service";
-import TodayMission from "@/components/missions/TodayMission";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import TodayMission from "@/components/missions/TodayMission";
 import { StatCard } from "@/components/ui";
+
+import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
+import { getNextRecommendation } from "@/features/recommendations/services/recommendation.service";
 import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
   display_name: string | null;
   headline: string | null;
+  location: string | null;
 };
 
 type Passport = {
   id: string;
+  bio: string | null;
+  years_experience: number | null;
+  preferred_role: string | null;
+  work_preference: string | null;
   profile_strength: number;
   is_published: boolean;
   github_url: string | null;
@@ -66,7 +74,7 @@ export default function DeveloperDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
   const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
-  const [latestProjects, setLatestProjects] = useState<DashboardProject[]>([]);
+  const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -85,13 +93,13 @@ export default function DeveloperDashboardPage() {
         }
 
         if (!user) {
-          router.push("/login");
+          router.replace("/login");
           return;
         }
 
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("display_name, headline")
+          .select("display_name, headline, location")
           .eq("id", user.id)
           .single();
 
@@ -104,6 +112,10 @@ export default function DeveloperDashboardPage() {
           .select(
             `
             id,
+            bio,
+            years_experience,
+            preferred_role,
+            work_preference,
             profile_strength,
             is_published,
             github_url,
@@ -119,7 +131,7 @@ export default function DeveloperDashboardPage() {
         }
 
         if (!passportData) {
-          router.push("/developer/edit");
+          router.replace("/developer/edit");
           return;
         }
 
@@ -128,12 +140,14 @@ export default function DeveloperDashboardPage() {
           skillsResult,
           featuredResult,
           completedResult,
-          latestProjectsResult,
         ] = await Promise.all([
           supabase
             .from("developer_projects")
-            .select("*", { count: "exact", head: true })
-            .eq("passport_id", passportData.id),
+            .select(
+              "id, title, status, is_featured, github_url, live_url, image_url, created_at",
+            )
+            .eq("passport_id", passportData.id)
+            .order("created_at", { ascending: false }),
 
           supabase
             .from("developer_skills")
@@ -151,38 +165,31 @@ export default function DeveloperDashboardPage() {
             .select("*", { count: "exact", head: true })
             .eq("passport_id", passportData.id)
             .eq("status", "completed"),
-
-          supabase
-            .from("developer_projects")
-            .select(
-              "id, title, status, is_featured, github_url, live_url, image_url, created_at",
-            )
-            .eq("passport_id", passportData.id)
-            .order("created_at", { ascending: false }),
         ]);
 
         const queryError =
           projectsResult.error ||
           skillsResult.error ||
           featuredResult.error ||
-          completedResult.error ||
-          latestProjectsResult.error;
+          completedResult.error;
 
         if (queryError) {
           throw new Error(queryError.message);
         }
 
+        const projectRows =
+          (projectsResult.data ?? []) as DashboardProject[];
+
         setProfile(profileData);
         setPassport(passportData);
+        setProjects(projectRows);
+
         setStats({
-          totalProjects: projectsResult.count ?? 0,
+          totalProjects: projectRows.length,
           totalSkills: skillsResult.count ?? 0,
           featuredProjects: featuredResult.count ?? 0,
           completedProjects: completedResult.count ?? 0,
         });
-        setLatestProjects(
-          (latestProjectsResult.data ?? []) as DashboardProject[],
-        );
       } catch (error) {
         setErrorMessage(
           error instanceof Error
@@ -252,6 +259,7 @@ export default function DeveloperDashboardPage() {
           <div>
             <p className="section-kicker">Atlas Dashboard</p>
             <h1>Unable to load your dashboard</h1>
+
             <p className="passport-editor-error">
               {errorMessage || "Developer Passport not found."}
             </p>
@@ -263,27 +271,36 @@ export default function DeveloperDashboardPage() {
 
   const displayName = profile?.display_name || "Developer";
 
+  const profileStrength = calculateProfileStrength({
+    displayName: profile?.display_name ?? null,
+    headline: profile?.headline ?? null,
+    location: profile?.location ?? null,
+    bio: passport.bio,
+    yearsExperience: passport.years_experience,
+    preferredRole: passport.preferred_role,
+    workPreference: passport.work_preference,
+    githubUrl: passport.github_url,
+    portfolioUrl: passport.portfolio_url,
+    linkedinUrl: passport.linkedin_url,
+    skillsCount: stats.totalSkills,
+    projectsCount: stats.totalProjects,
+  });
+
   const recommendation = getNextRecommendation({
-    totalProjects: latestProjects.length,
-
-    completedProjects: latestProjects.filter(
-      (project) => project.status === "completed",
-    ).length,
-
-    featuredProjects: latestProjects.filter((project) => project.is_featured)
-      .length,
-
-    githubProjects: latestProjects.filter((project) =>
+    totalProjects: stats.totalProjects,
+    completedProjects: stats.completedProjects,
+    featuredProjects: stats.featuredProjects,
+    githubProjects: projects.filter((project) =>
       Boolean(project.github_url),
     ).length,
-
-    liveProjects: latestProjects.filter((project) => Boolean(project.live_url))
-      .length,
-
-    screenshotProjects: latestProjects.filter((project) =>
+    liveProjects: projects.filter((project) =>
+      Boolean(project.live_url),
+    ).length,
+    screenshotProjects: projects.filter((project) =>
       Boolean(project.image_url),
     ).length,
   });
+
   return (
     <main className="dashboard-page">
       <Navbar compact />
@@ -300,13 +317,6 @@ export default function DeveloperDashboardPage() {
               </p>
             </div>
 
-            <TodayMission
-              title={recommendation.title}
-              description={recommendation.description}
-              impact={recommendation.impact}
-              estimatedMinutes={recommendation.estimatedMinutes}
-            />
-
             <div className="passport-page-actions">
               <Link className="button button-secondary" href="/developer">
                 View passport
@@ -317,6 +327,15 @@ export default function DeveloperDashboardPage() {
               </Link>
             </div>
           </div>
+
+          <TodayMission
+            title={recommendation.title}
+            description={recommendation.description}
+            impact={recommendation.impact}
+            estimatedMinutes={recommendation.estimatedMinutes}
+            actionLabel={recommendation.actionLabel}
+            actionHref={recommendation.actionHref}
+          />
 
           <div className="dashboard-stat-grid">
             <StatCard
@@ -356,16 +375,16 @@ export default function DeveloperDashboardPage() {
               <div className="profile-section-header">
                 <div>
                   <p className="dashboard-kicker">Passport progress</p>
-                  <h2>{passport.profile_strength}% complete</h2>
+                  <h2>{profileStrength}% complete</h2>
                 </div>
 
                 <span className="verified-badge">
-                  {passport.is_published ? "Published" : "Private"}
+                  {profileStrength >= 100 ? "Complete" : "In progress"}
                 </span>
               </div>
 
               <div
-                aria-label={`Passport completion: ${passport.profile_strength}%`}
+                aria-label={`Passport completion: ${profileStrength}%`}
                 style={{
                   width: "100%",
                   height: 12,
@@ -378,12 +397,13 @@ export default function DeveloperDashboardPage() {
                 <div
                   style={{
                     width: `${Math.min(
-                      Math.max(passport.profile_strength, 0),
+                      Math.max(profileStrength, 0),
                       100,
                     )}%`,
                     height: "100%",
                     borderRadius: 999,
-                    background: "linear-gradient(90deg, #8b5cf6, #4f46e5)",
+                    background:
+                      "linear-gradient(90deg, #8b5cf6, #4f46e5)",
                     transition: "width 300ms ease",
                   }}
                 />
@@ -391,7 +411,9 @@ export default function DeveloperDashboardPage() {
 
               {nextActions.length > 0 ? (
                 <div style={{ marginTop: 22 }}>
-                  <p className="dashboard-kicker">Recommended next steps</p>
+                  <p className="dashboard-kicker">
+                    Recommended next steps
+                  </p>
 
                   <ul
                     style={{
@@ -408,8 +430,9 @@ export default function DeveloperDashboardPage() {
                 </div>
               ) : (
                 <p className="profile-summary" style={{ marginTop: 20 }}>
-                  Your Passport foundation is complete. Continue adding strong,
-                  relevant evidence.
+                  {profileStrength >= 100
+                    ? "Your Passport foundation is complete. Continue adding strong, relevant evidence."
+                    : "Continue completing your Passport to strengthen your professional profile."}
                 </p>
               )}
 
@@ -469,16 +492,17 @@ export default function DeveloperDashboardPage() {
               <Link href="/developer/projects">View all projects →</Link>
             </div>
 
-            {latestProjects.length > 0 ? (
+            {projects.length > 0 ? (
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(230px, 1fr))",
                   gap: 16,
                   marginTop: 20,
                 }}
               >
-                {latestProjects.slice(0, 3).map((project) => (
+                {projects.slice(0, 3).map((project) => (
                   <article
                     key={project.id}
                     style={{
@@ -491,6 +515,7 @@ export default function DeveloperDashboardPage() {
                     <div className="profile-section-header">
                       <div>
                         <h3>{project.title}</h3>
+
                         <p className="dashboard-kicker">
                           {formatProjectStatus(project.status)}
                         </p>

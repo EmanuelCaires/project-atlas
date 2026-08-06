@@ -4,6 +4,8 @@ export type Recommendation = {
   description: string;
   impact: number;
   estimatedMinutes: number;
+  actionLabel: string;
+  actionHref: string;
 };
 
 export type RecommendationInput = {

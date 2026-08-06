@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PROJECT_STATUS_LABELS } from "@/features/projects/constants";
 import { listProjects } from "@/features/projects/services/projects.service";
 import type { DeveloperProject } from "@/features/projects/types";
+import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
 
 type Profile = {
   display_name: string | null;
@@ -230,7 +231,20 @@ export default function DeveloperPage() {
   const displayName = profile?.display_name || "Developer";
   const role =
     passport.preferred_role || profile?.headline || "Software Developer";
-
+  const profileStrength = calculateProfileStrength({
+    displayName: profile?.display_name ?? null,
+    headline: profile?.headline ?? null,
+    location: profile?.location ?? null,
+    bio: passport.bio,
+    yearsExperience: passport.years_experience,
+    preferredRole: passport.preferred_role,
+    workPreference: passport.work_preference,
+    githubUrl: passport.github_url,
+    portfolioUrl: passport.portfolio_url,
+    linkedinUrl: passport.linkedin_url,
+    skillsCount: developerSkills.length,
+    projectsCount: projects.length,
+  });
   return (
     <main>
       <Navbar compact />
@@ -331,7 +345,7 @@ export default function DeveloperPage() {
                 <div className="score-summary-grid">
                   <div>
                     <span>Profile strength</span>
-                    <strong>{passport.profile_strength}%</strong>
+                   <strong>{profileStrength}%</strong>
                   </div>
 
                   <div>

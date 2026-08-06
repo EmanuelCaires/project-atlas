@@ -7,7 +7,6 @@ import type {
 export function getNextRecommendation(
   input: RecommendationInput
 ): Recommendation {
-
   if (input.totalProjects === 0) {
     return {
       id: "first-project",
@@ -16,6 +15,8 @@ export function getNextRecommendation(
         "Projects are the strongest evidence of your technical ability.",
       impact: RECOMMENDATION_IMPACT.FIRST_PROJECT,
       estimatedMinutes: 30,
+      actionLabel: "Add first project",
+      actionHref: "/developer/projects",
     };
   }
 
@@ -27,6 +28,8 @@ export function getNextRecommendation(
         "Three strong projects give employers better confidence when evaluating your skills.",
       impact: RECOMMENDATION_IMPACT.MORE_PROJECTS,
       estimatedMinutes: 45,
+      actionLabel: "Add project",
+      actionHref: "/developer/projects",
     };
   }
 
@@ -38,6 +41,8 @@ export function getNextRecommendation(
         "GitHub provides verifiable technical evidence for employers.",
       impact: RECOMMENDATION_IMPACT.GITHUB,
       estimatedMinutes: 5,
+      actionLabel: "Manage projects",
+      actionHref: "/developer/projects",
     };
   }
 
@@ -49,6 +54,8 @@ export function getNextRecommendation(
         "Live applications allow employers to experience your work directly.",
       impact: RECOMMENDATION_IMPACT.LIVE_DEMO,
       estimatedMinutes: 15,
+      actionLabel: "Add live demo",
+      actionHref: "/developer/projects",
     };
   }
 
@@ -60,6 +67,8 @@ export function getNextRecommendation(
         "Visual evidence makes projects easier to evaluate.",
       impact: RECOMMENDATION_IMPACT.SCREENSHOT,
       estimatedMinutes: 3,
+      actionLabel: "Add screenshots",
+      actionHref: "/developer/projects",
     };
   }
 
@@ -70,5 +79,7 @@ export function getNextRecommendation(
       "Highlight the work you want employers to see first.",
     impact: RECOMMENDATION_IMPACT.FEATURED,
     estimatedMinutes: 2,
+    actionLabel: "Choose featured project",
+    actionHref: "/developer/projects",
   };
 }

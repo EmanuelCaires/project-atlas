@@ -5,6 +5,8 @@ type TodayMissionProps = {
   description: string;
   impact: number;
   estimatedMinutes: number;
+  actionLabel: string;
+  actionHref: string;
 };
 
 export default function TodayMission({
@@ -12,6 +14,8 @@ export default function TodayMission({
   description,
   impact,
   estimatedMinutes,
+  actionLabel,
+  actionHref,
 }: TodayMissionProps) {
   return (
     <section className="today-mission">
@@ -40,8 +44,8 @@ export default function TodayMission({
         </div>
       </div>
 
-      <Link className="button" href="/developer/projects">
-        Start Mission
+      <Link className="button" href={actionHref}>
+        {actionLabel}
       </Link>
     </section>
   );

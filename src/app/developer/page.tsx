@@ -10,7 +10,6 @@ import { PROJECT_STATUS_LABELS } from "@/features/projects/constants";
 import { listProjects } from "@/features/projects/services/projects.service";
 import type { DeveloperProject } from "@/features/projects/types";
 import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
-
 type Profile = {
   display_name: string | null;
   headline: string | null;
@@ -66,6 +65,74 @@ function formatAvailability(value: Passport["availability"]) {
   };
 
   return labels[value];
+}
+
+type EmployerInsight = {
+  profileStrength: number;
+  totalProjects: number;
+  completedProjects: number;
+  githubProjects: number;
+  liveProjects: number;
+  screenshotProjects: number;
+  totalSkills: number;
+};
+
+function generateEmployerInsight(insight: EmployerInsight) {
+  return insight;
+}
+
+function EmployerInsightCard({
+  insight,
+}: {
+  insight: EmployerInsight;
+}) {
+  return (
+    <section className="profile-section">
+      <div className="profile-section-header">
+        <div>
+          <p className="dashboard-kicker">Employer insights</p>
+          <h2>Hire-ready highlights</h2>
+        </div>
+      </div>
+
+      <div className="score-summary-grid">
+        <div>
+          <span>Profile strength</span>
+          <strong>{insight.profileStrength}%</strong>
+        </div>
+
+        <div>
+          <span>Projects added</span>
+          <strong>{insight.totalProjects}</strong>
+        </div>
+
+        <div>
+          <span>Completed projects</span>
+          <strong>{insight.completedProjects}</strong>
+        </div>
+
+        <div>
+          <span>GitHub projects</span>
+          <strong>{insight.githubProjects}</strong>
+        </div>
+
+        <div>
+          <span>Live demos</span>
+          <strong>{insight.liveProjects}</strong>
+        </div>
+
+        <div>
+          <span>Screenshots added</span>
+          <strong>{insight.screenshotProjects}</strong>
+        </div>
+
+        <div>
+          <span>Skills listed</span>
+          <strong>{insight.totalSkills}</strong>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function DeveloperPage() {
@@ -245,6 +312,21 @@ export default function DeveloperPage() {
     skillsCount: developerSkills.length,
     projectsCount: projects.length,
   });
+
+  const employerInsight = generateEmployerInsight({
+    profileStrength,
+    totalProjects: projects.length,
+    completedProjects: projects.filter(
+      (project) => project.status === "completed",
+    ).length,
+    githubProjects: projects.filter((project) => Boolean(project.github_url))
+      .length,
+    liveProjects: projects.filter((project) => Boolean(project.live_url))
+      .length,
+    screenshotProjects: projects.filter((project) => Boolean(project.image_url))
+      .length,
+    totalSkills: developerSkills.length,
+  });
   return (
     <main>
       <Navbar compact />
@@ -345,7 +427,7 @@ export default function DeveloperPage() {
                 <div className="score-summary-grid">
                   <div>
                     <span>Profile strength</span>
-                   <strong>{profileStrength}%</strong>
+                    <strong>{profileStrength}%</strong>
                   </div>
 
                   <div>
@@ -452,7 +534,7 @@ export default function DeveloperPage() {
                   </div>
                 )}
               </section>
-
+              <EmployerInsightCard insight={employerInsight} />
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>

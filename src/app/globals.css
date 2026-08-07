@@ -1152,3 +1152,47 @@ button.skill-badge:hover:not(:disabled) {
   color: #8b5cf6;
   font-weight: 700;
 }
+
+/* ==========================================
+   EVIDENCE BREAKDOWN
+========================================== */
+
+.evidence-breakdown {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.evidence-breakdown summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evidence-breakdown summary span {
+  color: #9b7cff;
+}
+
+.evidence-breakdown-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.evidence-breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.evidence-breakdown-item strong {
+  color: rgba(255, 255, 255, 0.9);
+}

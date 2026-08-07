@@ -2,6 +2,7 @@ import { SkillBadge } from "@/components/ui";
 import { calculateProjectEvidence } from "@/features/evidence/services/evidence.service";
 import { PROJECT_STATUS_LABELS } from "../constants";
 import type { DeveloperProject } from "../types";
+import EvidenceBreakdown from "@/features/evidence/components/EvidenceBreakdown";
 
 type ProjectCardProps = {
   project: DeveloperProject;
@@ -78,6 +79,11 @@ export default function ProjectCard({
           style={{ width: `${evidence.score}%` }}
         />
       </div>
+      
+      <EvidenceBreakdown
+        score={evidence.score}
+        breakdown={evidence.breakdown}
+      />
 
       <p className="profile-summary">
         {project.description || "No project description added."}

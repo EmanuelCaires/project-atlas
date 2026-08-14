@@ -51,13 +51,23 @@ function mapProjectWithSkills(project: {
   id: string;
   title: string;
   description: string | null;
+
   github_url: string | null;
+  github_verified: boolean | null;
+  github_verified_at: string | null;
+  github_repository_name: string | null;
+  github_language: string | null;
+  github_stars: number | null;
+  github_forks: number | null;
+
   live_url: string | null;
   image_url: string | null;
+
   status: DeveloperProject["status"];
   is_featured: boolean;
   started_at: string | null;
   completed_at: string | null;
+
   project_skills?: Array<{
     skills:
       | {
@@ -81,28 +91,28 @@ function mapProjectWithSkills(project: {
     .filter((skill): skill is DeveloperSkill => Boolean(skill));
 
   return {
-  id: project.id,
-  title: project.title,
-  description: project.description,
+    id: project.id,
+    title: project.title,
+    description: project.description,
 
-  github_url: project.github_url,
-  github_verified: project.github_verified ?? false,
-  github_verified_at: project.github_verified_at ?? null,
-  github_repository_name: project.github_repository_name ?? null,
-  github_language: project.github_language ?? null,
-  github_stars: project.github_stars ?? 0,
-  github_forks: project.github_forks ?? 0,
+    github_url: project.github_url,
+    github_verified: project.github_verified ?? false,
+    github_verified_at: project.github_verified_at ?? null,
+    github_repository_name: project.github_repository_name ?? null,
+    github_language: project.github_language ?? null,
+    github_stars: project.github_stars ?? 0,
+    github_forks: project.github_forks ?? 0,
 
-  live_url: project.live_url,
-  image_url: project.image_url,
+    live_url: project.live_url,
+    image_url: project.image_url,
 
-  status: project.status,
-  is_featured: project.is_featured,
-  started_at: project.started_at,
-  completed_at: project.completed_at,
+    status: project.status,
+    is_featured: project.is_featured,
+    started_at: project.started_at,
+    completed_at: project.completed_at,
 
-  skills,
-};
+    skills,
+  };
 }
 
 export async function getAuthenticatedPassportId(): Promise<string | null> {
@@ -159,7 +169,8 @@ export async function listDeveloperSkills(
 
   const { data, error } = await supabase
     .from("developer_skills")
-    .select(`
+    .select(
+      `
   id,
   level,
   years_experience,
@@ -169,7 +180,8 @@ export async function listDeveloperSkills(
     name,
     category
   )
-`)
+`,
+    )
 
     .eq("passport_id", passportId);
 
@@ -179,7 +191,7 @@ export async function listDeveloperSkills(
 
   return (data ?? [])
     .map((row) => {
-      const skill = Array.isArray(row.skills) ? row.skills[0] : row.skills;
+      const skill = Array.isArray(row.skill) ? row.skill[0] : row.skill;
 
       return skill;
     })
@@ -271,7 +283,7 @@ export async function updateProject(
     throw new Error(error.message);
   }
 
-  return data as DeveloperProject;
+  return mapProjectWithSkills(data);
 }
 
 export async function removeProject(

@@ -1,7 +1,10 @@
 export const EVIDENCE_POINTS = {
   PROJECT: 10,
   DESCRIPTION: 10,
+
   GITHUB: 15,
+  GITHUB_UNVERIFIED: 5,
+
   LIVE_DEMO: 15,
   SCREENSHOT: 10,
   SKILLS: 10,
@@ -9,6 +12,4 @@ export const EVIDENCE_POINTS = {
   COMPLETED: 20,
 } as const;
 
-export const MAX_EVIDENCE_SCORE = Object.values(
-  EVIDENCE_POINTS
-).reduce((total, value) => total + value, 0);
+export const MAX_EVIDENCE_SCORE = 100;

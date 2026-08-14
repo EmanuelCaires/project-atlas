@@ -3,6 +3,7 @@ import { calculateProjectEvidence } from "@/features/evidence/services/evidence.
 import { PROJECT_STATUS_LABELS } from "../constants";
 import type { DeveloperProject } from "../types";
 import EvidenceBreakdown from "@/features/evidence/components/EvidenceBreakdown";
+import GitHubVerificationBadge from "@/features/github-verification/components/GitHubVerificationBadge";
 
 type ProjectCardProps = {
   project: DeveloperProject;
@@ -79,7 +80,7 @@ export default function ProjectCard({
           style={{ width: `${evidence.score}%` }}
         />
       </div>
-      
+
       <EvidenceBreakdown
         score={evidence.score}
         breakdown={evidence.breakdown}
@@ -110,6 +111,31 @@ export default function ProjectCard({
           >
             GitHub
           </a>
+        )}
+
+        {project.github_url && (
+          <GitHubVerificationBadge
+            projectId={project.id}
+            repositoryUrl={project.github_url}
+            initialVerification={
+              project.github_verified
+                ? {
+                    verified: true,
+                    owner: "",
+                    repo: "",
+                    fullName: project.github_repository_name,
+                    description: null,
+                    language: project.github_language,
+                    stars: project.github_stars,
+                    forks: project.github_forks,
+                    isPrivate: null,
+                    repositoryUrl: project.github_url,
+                    updatedAt: project.github_verified_at,
+                    error: null,
+                  }
+                : null
+            }
+          />
         )}
 
         {project.live_url && (

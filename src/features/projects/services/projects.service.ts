@@ -16,6 +16,12 @@ const PROJECT_COLUMNS = `
   is_featured,
   started_at,
   completed_at,
+  github_verified,
+  github_verified_at,
+  github_repository_name,
+  github_language,
+  github_stars,
+  github_forks,
   project_skills (
     skills (
       id,
@@ -25,11 +31,7 @@ const PROJECT_COLUMNS = `
   )
 `;
 
-
-function toProjectPayload(
-  passportId: string,
-  form: ProjectFormValues
-) {
+function toProjectPayload(passportId: string, form: ProjectFormValues) {
   return {
     passport_id: passportId,
     title: form.title.trim(),
@@ -76,24 +78,31 @@ function mapProjectWithSkills(project: {
       if (!row.skills) return [];
       return Array.isArray(row.skills) ? row.skills : [row.skills];
     })
-    .filter(
-      (skill): skill is DeveloperSkill =>
-        Boolean(skill)
-    );
+    .filter((skill): skill is DeveloperSkill => Boolean(skill));
 
   return {
-    id: project.id,
-    title: project.title,
-    description: project.description,
-    github_url: project.github_url,
-    live_url: project.live_url,
-    image_url: project.image_url,
-    status: project.status,
-    is_featured: project.is_featured,
-    started_at: project.started_at,
-    completed_at: project.completed_at,
-    skills,
-  };
+  id: project.id,
+  title: project.title,
+  description: project.description,
+
+  github_url: project.github_url,
+  github_verified: project.github_verified ?? false,
+  github_verified_at: project.github_verified_at ?? null,
+  github_repository_name: project.github_repository_name ?? null,
+  github_language: project.github_language ?? null,
+  github_stars: project.github_stars ?? 0,
+  github_forks: project.github_forks ?? 0,
+
+  live_url: project.live_url,
+  image_url: project.image_url,
+
+  status: project.status,
+  is_featured: project.is_featured,
+  started_at: project.started_at,
+  completed_at: project.completed_at,
+
+  skills,
+};
 }
 
 export async function getAuthenticatedPassportId(): Promise<string | null> {
@@ -125,7 +134,7 @@ export async function getAuthenticatedPassportId(): Promise<string | null> {
 }
 
 export async function listProjects(
-  passportId: string
+  passportId: string,
 ): Promise<DeveloperProject[]> {
   const supabase = createClient();
 
@@ -144,20 +153,24 @@ export async function listProjects(
 }
 
 export async function listDeveloperSkills(
-  passportId: string
+  passportId: string,
 ): Promise<DeveloperSkill[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("developer_skills")
     .select(`
-      skill_id,
-      skills (
-        id,
-        name,
-        category
-      )
-    `)
+  id,
+  level,
+  years_experience,
+  is_verified,
+  skill:skills (
+    id,
+    name,
+    category
+  )
+`)
+
     .eq("passport_id", passportId);
 
   if (error) {
@@ -166,9 +179,7 @@ export async function listDeveloperSkills(
 
   return (data ?? [])
     .map((row) => {
-      const skill = Array.isArray(row.skills)
-        ? row.skills[0]
-        : row.skills;
+      const skill = Array.isArray(row.skills) ? row.skills[0] : row.skills;
 
       return skill;
     })
@@ -176,7 +187,7 @@ export async function listDeveloperSkills(
 }
 
 export async function listProjectSkillIds(
-  projectId: string
+  projectId: string,
 ): Promise<number[]> {
   const supabase = createClient();
 
@@ -194,7 +205,7 @@ export async function listProjectSkillIds(
 
 export async function replaceProjectSkills(
   projectId: string,
-  skillIds: number[]
+  skillIds: number[],
 ): Promise<void> {
   const supabase = createClient();
 
@@ -226,7 +237,7 @@ export async function replaceProjectSkills(
 }
 export async function createProject(
   passportId: string,
-  form: ProjectFormValues
+  form: ProjectFormValues,
 ): Promise<DeveloperProject> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -245,7 +256,7 @@ export async function createProject(
 export async function updateProject(
   projectId: string,
   passportId: string,
-  form: ProjectFormValues
+  form: ProjectFormValues,
 ): Promise<DeveloperProject> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -265,7 +276,7 @@ export async function updateProject(
 
 export async function removeProject(
   projectId: string,
-  passportId: string
+  passportId: string,
 ): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase

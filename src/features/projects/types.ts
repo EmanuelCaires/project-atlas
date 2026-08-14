@@ -16,6 +16,12 @@ export type DeveloperProject = {
   started_at: string | null;
   completed_at: string | null;
   skills: DeveloperSkill[];
+  github_verified: boolean;
+  github_verified_at: string | null;
+  github_repository_name: string | null;
+  github_language: string | null;
+  github_stars: number;
+  github_forks: number;
 };
 
 export type DeveloperSkill = {

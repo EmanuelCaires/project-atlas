@@ -23,7 +23,7 @@ const BREAKDOWN_ITEMS: Array<{
   },
   {
     key: "github",
-    label: "GitHub repository",
+    label: "GitHub evidence",
     maximum: EVIDENCE_POINTS.GITHUB,
   },
   {
@@ -53,6 +53,44 @@ const BREAKDOWN_ITEMS: Array<{
   },
 ];
 
+function getEvidenceLabel(
+  key: keyof EvidenceBreakdownValues,
+  earned: number,
+) {
+  if (key !== "github") {
+    return BREAKDOWN_ITEMS.find((item) => item.key === key)?.label ?? key;
+  }
+
+  if (earned >= EVIDENCE_POINTS.GITHUB) {
+    return "Verified GitHub repository";
+  }
+
+  if (earned >= EVIDENCE_POINTS.GITHUB_UNVERIFIED) {
+    return "GitHub URL added";
+  }
+
+  return "GitHub repository";
+}
+
+function getStatusSymbol(
+  key: keyof EvidenceBreakdownValues,
+  earned: number,
+  maximum: number,
+) {
+  if (earned === maximum) {
+    return "✓";
+  }
+
+  if (
+    key === "github" &&
+    earned === EVIDENCE_POINTS.GITHUB_UNVERIFIED
+  ) {
+    return "◐";
+  }
+
+  return "○";
+}
+
 export default function EvidenceBreakdown({
   score,
   breakdown,
@@ -60,22 +98,30 @@ export default function EvidenceBreakdown({
   return (
     <details className="evidence-breakdown">
       <summary>
-        View evidence breakdown
-        <span>{score}/100</span>
+        <span>Why this score?</span>
+        <strong>{score}/100</strong>
       </summary>
 
       <div className="evidence-breakdown-list">
         {BREAKDOWN_ITEMS.map((item) => {
           const earned = breakdown[item.key];
-          const completed = earned > 0;
+          const label = getEvidenceLabel(item.key, earned);
+          const symbol = getStatusSymbol(
+            item.key,
+            earned,
+            item.maximum,
+          );
 
           return (
-            <div className="evidence-breakdown-item" key={item.key}>
+            <div
+              className="evidence-breakdown-item"
+              key={item.key}
+            >
               <span>
                 <span aria-hidden="true">
-                  {completed ? "✓" : "○"}
+                  {symbol}
                 </span>{" "}
-                {item.label}
+                {label}
               </span>
 
               <strong>

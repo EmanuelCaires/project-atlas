@@ -247,6 +247,7 @@ export async function replaceProjectSkills(
     throw new Error(insertError.message);
   }
 }
+
 export async function createProject(
   passportId: string,
   form: ProjectFormValues,
@@ -271,9 +272,36 @@ export async function updateProject(
   form: ProjectFormValues,
 ): Promise<DeveloperProject> {
   const supabase = createClient();
+  const payload = toProjectPayload(passportId, form);
+
+  const { data: currentProject, error: currentProjectError } = await supabase
+    .from("developer_projects")
+    .select("github_url")
+    .eq("id", projectId)
+    .eq("passport_id", passportId)
+    .single();
+
+  if (currentProjectError) {
+    throw new Error(currentProjectError.message);
+  }
+
+  const githubUrlChanged = currentProject.github_url !== payload.github_url;
+
   const { data, error } = await supabase
     .from("developer_projects")
-    .update(toProjectPayload(passportId, form))
+    .update({
+      ...payload,
+      ...(githubUrlChanged
+        ? {
+            github_verified: false,
+            github_verified_at: null,
+            github_repository_name: null,
+            github_language: null,
+            github_stars: 0,
+            github_forks: 0,
+          }
+        : {}),
+    })
     .eq("id", projectId)
     .eq("passport_id", passportId)
     .select(PROJECT_COLUMNS)

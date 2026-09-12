@@ -1,0 +1,41 @@
+version: 1.0.0
+title: Atlas Pre-Commit Review
+description: Read-only review of current Project Atlas changes before commit
+instructions: |
+  Review the current uncommitted Project Atlas changes.
+
+  First read:
+  - AGENTS.md
+  - AI_WORKLOG.md
+  - ARCHITECTURE.md
+  - ROADMAP.md
+
+  Inspect:
+  - git status
+  - git diff
+  - relevant surrounding code
+
+  Check for:
+  - correctness
+  - regressions
+  - unrelated changes
+  - security issues
+  - exposed secrets
+  - Next.js misuse
+  - Supabase authorization problems
+  - opaque scoring logic
+  - evidence verification weaknesses
+  - duplicate evidence inflation
+  - unnecessary complexity
+  - missing validation
+
+  Do not modify files.
+  Do not stage files.
+  Do not commit.
+  Do not push.
+
+  Report:
+  - blockers
+  - warnings
+  - validation still required
+  - whether the change appears ready to commit

@@ -1,0 +1,48 @@
+version: 1.0.0
+title: Atlas Bug Investigation
+description: Structured read-first investigation of a Project Atlas bug
+parameters:
+  - key: bug
+    input_type: string
+    requirement: required
+    description: Bug or unexpected behaviour to investigate
+instructions: |
+  Investigate this Project Atlas issue:
+
+  {{ bug }}
+
+  Before investigating, read:
+  - AGENTS.md
+  - AI_WORKLOG.md
+  - ARCHITECTURE.md
+  - ROADMAP.md
+
+  Inspect relevant code before proposing changes.
+
+  Follow:
+  Reproduce/Trace → Identify cause → Determine smallest fix → Define validation
+
+  Check whether the problem involves:
+  - Next.js behaviour
+  - React state
+  - Supabase
+  - authentication or authorization
+  - evidence data
+  - scoring
+  - verification
+  - server/client boundaries
+
+  Remain read-only during investigation.
+
+  Do not modify files.
+  Do not install dependencies.
+  Do not commit.
+  Do not push.
+
+  Report:
+  - observed behaviour
+  - expected behaviour
+  - likely root cause
+  - affected files
+  - smallest recommended fix
+  - validation required

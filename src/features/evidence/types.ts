@@ -1,6 +1,7 @@
 export type ProjectEvidenceInput = {
   description: string | null;
   githubUrl: string | null;
+  githubVerified: boolean;
   liveUrl: string | null;
   imageUrl: string | null;
   isFeatured: boolean;

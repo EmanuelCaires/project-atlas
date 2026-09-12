@@ -5,20 +5,21 @@ import type { GitHubRepositoryVerification } from "../types";
 
 type GitHubVerificationBadgeProps = {
   projectId: string;
-  repositoryUrl: string;
   initialVerification: GitHubRepositoryVerification | null;
+};
+
+type SaveVerificationResponse = {
+  success?: boolean;
+  error?: string;
+  verification?: GitHubRepositoryVerification;
 };
 
 export default function GitHubVerificationBadge({
   projectId,
-  repositoryUrl,
   initialVerification,
 }: GitHubVerificationBadgeProps) {
   const [result, setResult] =
-  useState<GitHubRepositoryVerification | null>(
-    initialVerification,
-  );
-
+    useState<GitHubRepositoryVerification | null>(initialVerification);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,48 +28,33 @@ export default function GitHubVerificationBadge({
     setError(null);
 
     try {
-      // First verify the repository with GitHub.
-      const response = await fetch(
-        `/api/github/verify?url=${encodeURIComponent(repositoryUrl)}`,
-      );
-
-      const data =
-        (await response.json()) as GitHubRepositoryVerification;
-
-      if (!response.ok || !data.verified) {
-        setResult(data);
-        return;
-      }
-
-      // Then persist the successful verification in Atlas.
-      const saveResponse = await fetch(
-        "/api/github/save-verification",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId,
-            verification: data,
-          }),
+      const response = await fetch("/api/github/save-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ projectId }),
+      });
 
-      if (!saveResponse.ok) {
-        const saveData = await saveResponse.json();
+      const data = (await response.json()) as SaveVerificationResponse;
 
-        setError(
-          saveData.error ??
-            "Repository verified, but Atlas could not save the verification.",
-        );
-
+      if (!response.ok) {
+        if (data.verification) {
+          setResult(data.verification);
+        } else {
+          setError(data.error ?? "Unable to confirm the GitHub repository.");
+        }
         return;
       }
 
-      setResult(data);
+      if (!data.verification) {
+        setError("Atlas confirmed the repository but returned no verification details.");
+        return;
+      }
+
+      setResult(data.verification);
     } catch {
-      setError("Unable to verify the repository. Please try again.");
+      setError("Unable to confirm the repository. Please try again.");
     } finally {
       setVerifying(false);
     }
@@ -77,7 +63,7 @@ export default function GitHubVerificationBadge({
   if (error) {
     return (
       <div className="github-verification github-verification-failed">
-        <strong>Verification error</strong>
+        <strong>Repository check error</strong>
         <span>{error}</span>
 
         <button
@@ -99,7 +85,7 @@ export default function GitHubVerificationBadge({
         onClick={handleVerify}
         type="button"
       >
-        {verifying ? "Verifying..." : "Verify GitHub"}
+        {verifying ? "Checking..." : "Check GitHub repository"}
       </button>
     );
   }
@@ -107,7 +93,7 @@ export default function GitHubVerificationBadge({
   if (!result.verified) {
     return (
       <div className="github-verification github-verification-failed">
-        <strong>GitHub not verified</strong>
+        <strong>Repository not confirmed</strong>
         <span>{result.error}</span>
 
         <button
@@ -124,7 +110,7 @@ export default function GitHubVerificationBadge({
   return (
     <div className="github-verification github-verification-success">
       <div>
-        <strong>✓ Verified repository</strong>
+        <strong>✓ GitHub repository confirmed</strong>
         <span>{result.fullName}</span>
       </div>
 

@@ -26,6 +26,7 @@ export default function ProjectCard({
   const evidence = calculateProjectEvidence({
     description: project.description,
     githubUrl: project.github_url,
+    githubVerified: project.github_verified,
     liveUrl: project.live_url,
     imageUrl: project.image_url,
     isFeatured: project.is_featured,
@@ -116,7 +117,6 @@ export default function ProjectCard({
         {project.github_url && (
           <GitHubVerificationBadge
             projectId={project.id}
-            repositoryUrl={project.github_url}
             initialVerification={
               project.github_verified
                 ? {

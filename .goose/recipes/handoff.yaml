@@ -1,0 +1,31 @@
+version: 1.0.0
+title: Atlas Agent Handoff
+description: Prepare a clean Project Atlas handoff between AI agents
+instructions: |
+  Prepare a handoff for the next Project Atlas agent.
+
+  Read:
+  - AGENTS.md
+  - AI_WORKLOG.md
+  - ARCHITECTURE.md
+  - ROADMAP.md
+
+  Inspect:
+  - current Git branch
+  - git status
+  - git diff when changes exist
+
+  Determine:
+  - agent used
+  - current task
+  - completed work
+  - files changed
+  - validation performed
+  - known issues
+  - exact next step
+
+  Do not modify application code.
+  Do not commit.
+  Do not push.
+
+  Produce a concise handoff that can be placed into AI_WORKLOG.md.

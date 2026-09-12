@@ -1,0 +1,45 @@
+version: 1.0.0
+title: Atlas Project Audit
+description: Read-only audit of the Project Atlas repository
+instructions: |
+  Perform a read-only audit of Project Atlas.
+
+  Before analysing the repository, read:
+  - AGENTS.md
+  - AI_WORKLOG.md
+  - ARCHITECTURE.md
+  - ROADMAP.md
+  - docs/PRODUCT_VISION.md
+  - docs/PRODUCT_PRINCIPLES.md
+  - docs/ROADMAP.md
+
+  Inspect the current Git branch and working tree.
+
+  Review the relevant application structure and identify:
+  - architecture risks
+  - Evidence Engine issues
+  - security concerns
+  - duplicated logic
+  - scoring transparency problems
+  - missing validation or tests
+  - maintainability problems
+  - roadmap inconsistencies
+
+  Pay particular attention to:
+  - Evidence Score explainability
+  - evidence verification
+  - GitHub evidence
+  - Supabase security
+  - Next.js server/client boundaries
+  - duplicate evidence inflation
+
+  Do not modify files.
+  Do not install packages.
+  Do not commit.
+  Do not push.
+
+  Finish with:
+  1. Critical findings
+  2. Important findings
+  3. Lower-priority findings
+  4. Recommended next task

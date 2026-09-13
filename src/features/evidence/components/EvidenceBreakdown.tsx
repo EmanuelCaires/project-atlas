@@ -62,7 +62,7 @@ function getEvidenceLabel(
   }
 
   if (earned >= EVIDENCE_POINTS.GITHUB) {
-    return "Verified GitHub repository";
+    return "Confirmed GitHub repository";
   }
 
   if (earned >= EVIDENCE_POINTS.GITHUB_UNVERIFIED) {

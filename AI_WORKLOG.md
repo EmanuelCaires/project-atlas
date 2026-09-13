@@ -187,3 +187,46 @@ Review: Read-only reviewer found no blocking issues; confirmed editable project
 cards retain their actions, confirmation wording matches the repository check,
 and completion explanation matches existing scoring. The referenced
 `docs/CODEX-NAVIGATION-GUIDE.md` is absent from this checkout.
+
+## Shared Components v1 — 2026-09-13
+
+Agent: Codex (implementation), read-only reviewer agent.
+
+Current task: Extract the repeated Developer Passport section shell on
+`feature/shared-components` as a behavior-preserving refactor.
+
+Completed:
+- Added shared `PassportSection` with `kicker: string`, `heading: ReactNode`,
+  optional `action: ReactNode`, and required `children: ReactNode`.
+- Exported it through the existing UI barrel and migrated About, Profile links,
+  Skills & experience, Project evidence, and Passport completion.
+- Preserved section/header elements, h2 headings, CSS classes, copy, actions,
+  content order, repository confirmation semantics and accessibility attributes.
+- Scoring, completion logic, ProjectCard, timeline, data requests, routes and
+  database schema remain unchanged.
+- Read project guidance and the installed Next.js 16.2.10 Server and Client
+  Components guide before implementation; no new client boundary is needed.
+
+Files changed:
+- `src/components/ui/PassportSection.tsx`
+- `src/components/ui/index.ts`
+- `src/app/developer/page.tsx`
+- `AI_WORKLOG.md`
+
+Validation:
+- `npm run lint` passed.
+- Existing evidence timeline suite: all 3 tests passed, compiled with local
+  TypeScript into `/tmp/atlas-shared-timeline-tests` and executed with Node.
+- Initial build was blocked by sandbox restrictions on Turbopack's local port
+  binding; approved `npm run build` rerun passed, including TypeScript and
+  static page generation.
+- Application diff reviewed for accidental product/copy changes; none found.
+- `git diff --check` passed.
+
+Known limitation: Authenticated browser/visual testing was not performed.
+No new tests were added for this presentation-only extraction.
+
+Review: Read-only reviewer found no issues; confirmed equivalent DOM, copy,
+actions, section order, evidence semantics and completion behavior.
+
+Next step: User review. No commit or push performed.

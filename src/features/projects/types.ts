@@ -13,6 +13,7 @@ export type DeveloperProject = {
   image_url: string | null;
   status: ProjectStatus;
   is_featured: boolean;
+  created_at: string | null;
   started_at: string | null;
   completed_at: string | null;
   skills: DeveloperSkill[];

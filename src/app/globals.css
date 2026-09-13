@@ -1237,3 +1237,37 @@ button.skill-badge:hover:not(:disabled) {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* Evidence timeline */
+.evidence-timeline-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-timeline-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding-left: 16px;
+  border-left: 2px solid var(--atlas-border-strong);
+  overflow-wrap: anywhere;
+}
+
+.evidence-timeline-item h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.evidence-timeline-item p {
+  margin: 4px 0 0;
+  color: var(--atlas-text-secondary);
+}
+
+.evidence-timeline-item time {
+  color: var(--atlas-text-muted);
+  font-size: 0.875rem;
+}

@@ -10,6 +10,9 @@ import { PROJECT_STATUS_LABELS } from "@/features/projects/constants";
 import { listProjects } from "@/features/projects/services/projects.service";
 import type { DeveloperProject } from "@/features/projects/types";
 import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
+import EvidenceTimeline from "@/features/evidence/components/EvidenceTimeline";
+import { buildEvidenceTimeline } from "@/features/evidence/services/evidence-timeline.service";
+
 type Profile = {
   display_name: string | null;
   headline: string | null;
@@ -535,6 +538,7 @@ export default function DeveloperPage() {
                 )}
               </section>
               <EmployerInsightCard insight={employerInsight} />
+              <EvidenceTimeline events={buildEvidenceTimeline(projects)} />
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>

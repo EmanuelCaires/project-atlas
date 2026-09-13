@@ -14,6 +14,7 @@ const PROJECT_COLUMNS = `
   image_url,
   status,
   is_featured,
+  created_at,
   started_at,
   completed_at,
   github_verified,
@@ -65,6 +66,7 @@ function mapProjectWithSkills(project: {
 
   status: DeveloperProject["status"];
   is_featured: boolean;
+  created_at: string | null;
   started_at: string | null;
   completed_at: string | null;
 
@@ -108,6 +110,7 @@ function mapProjectWithSkills(project: {
 
     status: project.status,
     is_featured: project.is_featured,
+    created_at: project.created_at ?? null,
     started_at: project.started_at,
     completed_at: project.completed_at,
 

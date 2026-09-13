@@ -24,3 +24,17 @@ export type EvidenceResult = {
   score: number;
   breakdown: EvidenceBreakdown;
 };
+
+export type EvidenceTimelineEventType =
+  | "project_added"
+  | "project_started"
+  | "project_completed"
+  | "repository_confirmed";
+
+export type EvidenceTimelineEvent = {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  type: EvidenceTimelineEventType;
+  date: string;
+};

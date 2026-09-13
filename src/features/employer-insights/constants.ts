@@ -1,0 +1,5 @@
+export const EMPLOYER_EVIDENCE_THRESHOLDS = {
+  OUTSTANDING: 90,
+  EXCELLENT: 80,
+  STRONG: 65,
+} as const;

@@ -6,11 +6,25 @@ import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
-
+import { PROJECT_STATUS_LABELS } from "@/features/projects/constants";
+import { listProjects } from "@/features/projects/services/projects.service";
+import type { DeveloperProject } from "@/features/projects/types";
+import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
 type Profile = {
   display_name: string | null;
   headline: string | null;
   location: string | null;
+};
+
+type DeveloperSkill = {
+  id: number;
+  level: "beginner" | "intermediate" | "advanced" | "expert";
+  years_experience: number;
+  is_verified: boolean;
+  skill: {
+    name: string;
+    category: string | null;
+  };
 };
 
 type Passport = {
@@ -53,11 +67,81 @@ function formatAvailability(value: Passport["availability"]) {
   return labels[value];
 }
 
+type EmployerInsight = {
+  profileStrength: number;
+  totalProjects: number;
+  completedProjects: number;
+  githubProjects: number;
+  liveProjects: number;
+  screenshotProjects: number;
+  totalSkills: number;
+};
+
+function generateEmployerInsight(insight: EmployerInsight) {
+  return insight;
+}
+
+function EmployerInsightCard({
+  insight,
+}: {
+  insight: EmployerInsight;
+}) {
+  return (
+    <section className="profile-section">
+      <div className="profile-section-header">
+        <div>
+          <p className="dashboard-kicker">Employer insights</p>
+          <h2>Hire-ready highlights</h2>
+        </div>
+      </div>
+
+      <div className="score-summary-grid">
+        <div>
+          <span>Profile strength</span>
+          <strong>{insight.profileStrength}%</strong>
+        </div>
+
+        <div>
+          <span>Projects added</span>
+          <strong>{insight.totalProjects}</strong>
+        </div>
+
+        <div>
+          <span>Completed projects</span>
+          <strong>{insight.completedProjects}</strong>
+        </div>
+
+        <div>
+          <span>GitHub projects</span>
+          <strong>{insight.githubProjects}</strong>
+        </div>
+
+        <div>
+          <span>Live demos</span>
+          <strong>{insight.liveProjects}</strong>
+        </div>
+
+        <div>
+          <span>Screenshots added</span>
+          <strong>{insight.screenshotProjects}</strong>
+        </div>
+
+        <div>
+          <span>Skills listed</span>
+          <strong>{insight.totalSkills}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function DeveloperPage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [passport, setPassport] = useState<Passport | null>(null);
+  const [developerSkills, setDeveloperSkills] = useState<DeveloperSkill[]>([]);
+  const [projects, setProjects] = useState<DeveloperProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -104,7 +188,7 @@ export default function DeveloperPage() {
           github_verified,
           profile_strength,
           is_published
-          `
+          `,
         )
         .eq("profile_id", user.id)
         .maybeSingle();
@@ -113,6 +197,45 @@ export default function DeveloperPage() {
         setErrorMessage(passportError.message);
         setLoading(false);
         return;
+      }
+
+      if (passportData) {
+        const { data: skillRows, error: skillsError } = await supabase
+          .from("developer_skills")
+          .select(
+            `
+            id,
+            level,
+            years_experience,
+            is_verified,
+            skill:skills (
+              name,
+              category
+            )
+            `,
+          )
+          .eq("passport_id", passportData.id)
+          .order("years_experience", { ascending: false });
+
+        if (skillsError) {
+          setErrorMessage(skillsError.message);
+          setLoading(false);
+          return;
+        }
+
+        setDeveloperSkills((skillRows ?? []) as unknown as DeveloperSkill[]);
+
+        try {
+          setProjects(await listProjects(passportData.id));
+        } catch (projectsError) {
+          setErrorMessage(
+            projectsError instanceof Error
+              ? projectsError.message
+              : "Unable to load projects.",
+          );
+          setLoading(false);
+          return;
+        }
       }
 
       setProfile(profileData);
@@ -174,10 +297,36 @@ export default function DeveloperPage() {
 
   const displayName = profile?.display_name || "Developer";
   const role =
-    passport.preferred_role ||
-    profile?.headline ||
-    "Software Developer";
+    passport.preferred_role || profile?.headline || "Software Developer";
+  const profileStrength = calculateProfileStrength({
+    displayName: profile?.display_name ?? null,
+    headline: profile?.headline ?? null,
+    location: profile?.location ?? null,
+    bio: passport.bio,
+    yearsExperience: passport.years_experience,
+    preferredRole: passport.preferred_role,
+    workPreference: passport.work_preference,
+    githubUrl: passport.github_url,
+    portfolioUrl: passport.portfolio_url,
+    linkedinUrl: passport.linkedin_url,
+    skillsCount: developerSkills.length,
+    projectsCount: projects.length,
+  });
 
+  const employerInsight = generateEmployerInsight({
+    profileStrength,
+    totalProjects: projects.length,
+    completedProjects: projects.filter(
+      (project) => project.status === "completed",
+    ).length,
+    githubProjects: projects.filter((project) => Boolean(project.github_url))
+      .length,
+    liveProjects: projects.filter((project) => Boolean(project.live_url))
+      .length,
+    screenshotProjects: projects.filter((project) => Boolean(project.image_url))
+      .length,
+    totalSkills: developerSkills.length,
+  });
   return (
     <main>
       <Navbar compact />
@@ -190,10 +339,16 @@ export default function DeveloperPage() {
               <h1>Professional evidence in one verified profile.</h1>
             </div>
 
+            <Link className="button button-secondary" href="/dashboard">
+              Back to dashboard
+            </Link>
+
             <div className="passport-page-actions">
               <button
                 className="button button-secondary"
-                onClick={() => navigator.clipboard.writeText(window.location.href)}
+                onClick={() =>
+                  navigator.clipboard.writeText(window.location.href)
+                }
                 type="button"
               >
                 Share profile
@@ -223,9 +378,7 @@ export default function DeveloperPage() {
               <div className="sidebar-details">
                 <div>
                   <span>Experience</span>
-                  <strong>
-                    {passport.years_experience ?? 0} years
-                  </strong>
+                  <strong>{passport.years_experience ?? 0} years</strong>
                 </div>
 
                 <div>
@@ -235,9 +388,7 @@ export default function DeveloperPage() {
 
                 <div>
                   <span>Work preference</span>
-                  <strong>
-                    {passport.work_preference || "Not specified"}
-                  </strong>
+                  <strong>{passport.work_preference || "Not specified"}</strong>
                 </div>
 
                 <div>
@@ -262,24 +413,21 @@ export default function DeveloperPage() {
                   </div>
 
                   {passport.identity_verified ? (
-                    <span className="verified-badge">
-                      Identity verified
-                    </span>
+                    <span className="verified-badge">Identity verified</span>
                   ) : (
-                    <span className="verified-badge">
-                      Verification pending
-                    </span>
+                    <span className="verified-badge">Verification pending</span>
                   )}
                 </div>
 
                 <p className="profile-summary">
-                  {passport.bio || "No professional biography has been added yet."}
+                  {passport.bio ||
+                    "No professional biography has been added yet."}
                 </p>
 
                 <div className="score-summary-grid">
                   <div>
                     <span>Profile strength</span>
-                    <strong>{passport.profile_strength}%</strong>
+                    <strong>{profileStrength}%</strong>
                   </div>
 
                   <div>
@@ -354,26 +502,143 @@ export default function DeveloperPage() {
                     <p className="dashboard-kicker">Technical evidence</p>
                     <h2>Skills</h2>
                   </div>
+
+                  <Link
+                    className="button button-secondary"
+                    href="/developer/skills"
+                  >
+                    Manage skills
+                  </Link>
                 </div>
 
-                <p className="profile-summary">
-                  Skills management will be connected in the next development
-                  stage.
-                </p>
+                {developerSkills.length > 0 ? (
+                  <div className="candidate-skills">
+                    {developerSkills.map((developerSkill) => (
+                      <span key={developerSkill.id}>
+                        {developerSkill.skill.name} · {developerSkill.level}
+                        {developerSkill.years_experience > 0
+                          ? ` · ${developerSkill.years_experience}y`
+                          : ""}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="profile-summary">
+                      No skills have been added yet. Add your strongest skills
+                      to strengthen your Developer Passport.
+                    </p>
+                    <Link className="button" href="/developer/skills">
+                      Add skills
+                    </Link>
+                  </div>
+                )}
               </section>
-
+              <EmployerInsightCard insight={employerInsight} />
               <section className="profile-section">
                 <div className="profile-section-header">
                   <div>
                     <p className="dashboard-kicker">Selected work</p>
                     <h2>Projects</h2>
                   </div>
+
+                  <Link
+                    className="button button-secondary"
+                    href="/developer/projects"
+                  >
+                    Manage projects
+                  </Link>
                 </div>
 
-                <p className="profile-summary">
-                  Project management will be connected in the next development
-                  stage.
-                </p>
+                {projects.length > 0 ? (
+                  <div style={{ display: "grid", gap: 16 }}>
+                    {projects.map((project) => (
+                      <article
+                        key={project.id}
+                        style={{
+                          padding: 18,
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          borderRadius: 14,
+                          background: "rgba(255, 255, 255, 0.03)",
+                        }}
+                      >
+                        {project.image_url && (
+                          // External URLs remain unoptimised until Atlas adds
+                          // managed image storage.
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            alt={`${project.title} screenshot`}
+                            src={project.image_url}
+                            style={{
+                              width: "100%",
+                              maxHeight: 260,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                              marginBottom: 16,
+                            }}
+                          />
+                        )}
+
+                        <div className="profile-section-header">
+                          <div>
+                            <h3>{project.title}</h3>
+                            <p className="dashboard-kicker">
+                              {PROJECT_STATUS_LABELS[project.status]}
+                            </p>
+                          </div>
+
+                          {project.is_featured && (
+                            <span className="verified-badge">Featured</span>
+                          )}
+                        </div>
+
+                        <p className="profile-summary">
+                          {project.description ||
+                            "No project description added."}
+                        </p>
+
+                        {(project.github_url || project.live_url) && (
+                          <div
+                            className="passport-page-actions"
+                            style={{ marginTop: 16 }}
+                          >
+                            {project.github_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.github_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                GitHub
+                              </a>
+                            )}
+
+                            {project.live_url && (
+                              <a
+                                className="button button-secondary"
+                                href={project.live_url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Live demo
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="profile-summary">
+                      No projects have been added yet. Add work that
+                      demonstrates your technical ability.
+                    </p>
+                    <Link className="button" href="/developer/projects">
+                      Add projects
+                    </Link>
+                  </div>
+                )}
               </section>
             </div>
           </div>

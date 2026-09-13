@@ -1,0 +1,15 @@
+export const EVIDENCE_POINTS = {
+  PROJECT: 10,
+  DESCRIPTION: 10,
+
+  GITHUB: 15,
+  GITHUB_UNVERIFIED: 5,
+
+  LIVE_DEMO: 15,
+  SCREENSHOT: 10,
+  SKILLS: 10,
+  FEATURED: 10,
+  COMPLETED: 20,
+} as const;
+
+export const MAX_EVIDENCE_SCORE = 100;

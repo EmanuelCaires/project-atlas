@@ -1271,3 +1271,22 @@ button.skill-badge:hover:not(:disabled) {
   color: var(--atlas-text-muted);
   font-size: 0.875rem;
 }
+
+/* Passport presentation shares the project and evidence components. */
+.better-passport .passport-dashboard { align-items: start; }
+.better-passport .passport-main-column,
+.better-passport .developer-sidebar { min-width: 0; overflow-wrap: anywhere; }
+.better-passport .profile-section-header { flex-wrap: wrap; gap: 16px; align-items: start; }
+.better-passport .passport-page-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.better-passport .profile-summary { margin-block: 16px; }
+.better-passport .sidebar-details div { gap: 16px; text-align: left; }
+.better-passport .sidebar-details strong { text-align: right; }
+.passport-project-list, .passport-skill-list { display: grid; gap: 16px; }
+.passport-skill-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.passport-skill-row > span:last-child { color: var(--muted); font-size: 13px; }
+.passport-completion { width: 100%; height: 12px; accent-color: var(--primary); }
+.better-passport .evidence-breakdown { margin-block: 16px; }
+@media (max-width: 600px) {
+  .better-passport .profile-section, .better-passport .developer-sidebar { padding: 20px; }
+  .better-passport .profile-section-header .button { width: 100%; }
+}

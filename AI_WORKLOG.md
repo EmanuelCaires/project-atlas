@@ -136,3 +136,54 @@ The timeline derives current stored dates, so edits or deleted projects change
 its contents; it is not a permanent audit history. Dates display in UTC.
 
 Next step: User review. No commit or push performed.
+
+## Better Passport v1 — 2026-09-13
+
+Agent: Codex (implementation), read-only reviewer agent.
+
+Current task: Sprint 2.0 Better Passport on `/developer`.
+
+Completed:
+- Made name and professional headline the page introduction, with graceful
+  missing-detail fallbacks and explicitly self-reported bio and skills.
+- Reused SkillBadge and ProjectCard; added a read-only project presentation
+  with existing scores, score breakdowns, linked skills and repository state.
+- Kept featured-first project ordering and moved work ahead of the timeline.
+- Replaced duplicate hire-ready statistics with explained profile completion
+  and one project-focused next action.
+- Removed blanket verification/pending claims and the premature share control.
+- Added scoped wrapping and small-screen spacing using existing Atlas styles.
+- No scoring, query, schema, routing or dependency changes.
+
+Files changed:
+- `src/app/developer/page.tsx`
+- `src/features/projects/components/ProjectCard.tsx`
+- `src/app/globals.css`
+- `AI_WORKLOG.md`
+
+Validation:
+- `npm run lint` passed.
+- `npm run build` passed, including TypeScript and static page generation.
+  Initial sandboxed attempt failed because Turbopack could not bind a local
+  port; the approved rerun passed.
+- Existing evidence timeline suite: all 3 tests passed (compiled with local
+  TypeScript into `/tmp/atlas-passport-timeline-tests` and run with Node).
+- Reviewed application diff and `git diff --check` passed.
+- No new pure business logic was introduced, so no new tests were added.
+
+Known limitations:
+- Authenticated browser/visual and mobile testing was not performed.
+- Skills retain the existing self-reported experience order; project cards
+  expose their supporting skill links without inferring verified proficiency.
+- Repository confirmation is stored state, not a fresh check or proof of authorship.
+- Public sharing remains future work.
+
+Recommended next improvement: a skill-to-project evidence summary with direct
+links to supporting work, using stable skill IDs and transparent ordering.
+
+Next step: User review. No commit or push performed.
+
+Review: Read-only reviewer found no blocking issues; confirmed editable project
+cards retain their actions, confirmation wording matches the repository check,
+and completion explanation matches existing scoring. The referenced
+`docs/CODEX-NAVIGATION-GUIDE.md` is absent from this checkout.

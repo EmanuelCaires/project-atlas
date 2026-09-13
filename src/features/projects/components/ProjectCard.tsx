@@ -7,8 +7,9 @@ import GitHubVerificationBadge from "@/features/github-verification/components/G
 
 type ProjectCardProps = {
   project: DeveloperProject;
-  onEdit: (project: DeveloperProject) => void;
-  onDelete: (projectId: string) => void;
+  onEdit?: (project: DeveloperProject) => void;
+  onDelete?: (projectId: string) => void;
+  readOnly?: boolean;
 };
 
 function getEvidenceLabel(score: number) {
@@ -22,6 +23,7 @@ export default function ProjectCard({
   project,
   onEdit,
   onDelete,
+  readOnly = false,
 }: ProjectCardProps) {
   const evidence = calculateProjectEvidence({
     description: project.description,
@@ -102,6 +104,16 @@ export default function ProjectCard({
         </div>
       )}
 
+      {readOnly && (
+        <p className="profile-summary">
+          {project.github_url?.trim()
+            ? project.github_verified
+              ? "GitHub repository confirmed"
+              : "GitHub URL added · Repository not confirmed"
+            : "No GitHub repository added"}
+        </p>
+      )}
+
       <div className="passport-page-actions developer-project-card-actions">
         {project.github_url && (
           <a
@@ -114,7 +126,7 @@ export default function ProjectCard({
           </a>
         )}
 
-        {project.github_url && (
+        {project.github_url && !readOnly && (
           <GitHubVerificationBadge
             projectId={project.id}
             initialVerification={
@@ -149,21 +161,25 @@ export default function ProjectCard({
           </a>
         )}
 
-        <button
-          className="button button-secondary"
-          onClick={() => onEdit(project)}
-          type="button"
-        >
-          Edit
-        </button>
+        {!readOnly && onEdit && (
+          <button
+            className="button button-secondary"
+            onClick={() => onEdit(project)}
+            type="button"
+          >
+            Edit
+          </button>
+        )}
 
-        <button
-          className="button button-secondary"
-          onClick={() => onDelete(project.id)}
-          type="button"
-        >
-          Delete
-        </button>
+        {!readOnly && onDelete && (
+          <button
+            className="button button-secondary"
+            onClick={() => onDelete(project.id)}
+            type="button"
+          >
+            Delete
+          </button>
+        )}
       </div>
     </article>
   );

@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import ProjectCard from "@/features/projects/components/ProjectCard";
-import { SkillBadge } from "@/components/ui";
+import { PassportSection, SkillBadge } from "@/components/ui";
 import { listProjects } from "@/features/projects/services/projects.service";
 import type { DeveloperProject } from "@/features/projects/types";
 import { calculateProfileStrength } from "@/features/evidence/services/profile-strength.service";
@@ -323,32 +323,25 @@ export default function DeveloperPage() {
             </aside>
 
             <div className="passport-main-column">
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Professional introduction · Self-reported</p>
-                    <h2>About</h2>
-                  </div>
-
-                  {passport.identity_verified ? (
+              <PassportSection
+                kicker="Professional introduction · Self-reported"
+                heading="About"
+                action={
+                  passport.identity_verified ? (
                     <span className="verified-badge">Identity verified</span>
-                  ) : null}
-                </div>
-
+                  ) : null
+                }
+              >
                 <p className="profile-summary">
                   {passport.bio?.trim() ||
                     "No professional biography has been added yet."}
                 </p>
-              </section>
+              </PassportSection>
 
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Provided by the developer</p>
-                    <h2>Profile links</h2>
-                  </div>
-                </div>
-
+              <PassportSection
+                kicker="Provided by the developer"
+                heading="Profile links"
+              >
                 <div className="passport-link-list">
                   {passport.github_url ? (
                     <a
@@ -389,23 +382,20 @@ export default function DeveloperPage() {
                     <span>LinkedIn URL not added</span>
                   )}
                 </div>
-              </section>
+              </PassportSection>
 
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Self-reported capabilities</p>
-                    <h2>Skills &amp; experience</h2>
-                  </div>
-
+              <PassportSection
+                kicker="Self-reported capabilities"
+                heading="Skills &amp; experience"
+                action={
                   <Link
                     className="button button-secondary"
                     href="/developer/skills"
                   >
                     Manage skills
                   </Link>
-                </div>
-
+                }
+              >
                 {developerSkills.length > 0 ? (
                   <div className="passport-skill-list">
                     <p className="profile-summary">Listed by reported years of experience. See project-linked skills in the work below.</p>
@@ -432,22 +422,19 @@ export default function DeveloperPage() {
                     </Link>
                   </div>
                 )}
-              </section>
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Selected work</p>
-                    <h2>Project evidence</h2>
-                  </div>
-
+              </PassportSection>
+              <PassportSection
+                kicker="Selected work"
+                heading="Project evidence"
+                action={
                   <Link
                     className="button button-secondary"
                     href="/developer/projects"
                   >
                     Manage projects
                   </Link>
-                </div>
-
+                }
+              >
                 {projects.length > 0 ? (
                   <div className="passport-project-list">
                     <p className="profile-summary">
@@ -471,14 +458,11 @@ export default function DeveloperPage() {
                     </Link>
                   </div>
                 )}
-              </section>
-              <section className="profile-section">
-                <div className="profile-section-header">
-                  <div>
-                    <p className="dashboard-kicker">Professional progress</p>
-                    <h2>Passport completion · {profileStrength}%</h2>
-                  </div>
-                </div>
+              </PassportSection>
+              <PassportSection
+                kicker="Professional progress"
+                heading={<>Passport completion · {profileStrength}%</>}
+              >
                 <p className="profile-summary">
                   Completion tracks profile details, links, skills and projects.
                   It is separate from project evidence scores and does not verify capability.
@@ -509,7 +493,7 @@ export default function DeveloperPage() {
                 <Link className="button button-secondary" href="/developer/projects">
                   {projects.length === 0 ? "Add your first project" : "Improve project evidence"}
                 </Link>
-              </section>
+              </PassportSection>
               <EvidenceTimeline events={buildEvidenceTimeline(projects)} />
             </div>
           </div>
